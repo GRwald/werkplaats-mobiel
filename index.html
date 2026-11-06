@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1C140F" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Werkplaats</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-outer: #0E0A07;
+      --wood-dark: #1C140F;
+      --oxblood: #4E221D;
+      --beige-hi: #BAA484;
+      --beige-text: #CEBMA0;
+      --beige-soft: #B8A487;
+      --beige-muted: #7E6B56;
+      --ink-dark: #281C13;
+      --ink-soft: #4A3727;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-outer);
+      color: var(--beige-soft);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 412px;
+      height: 100dvh;
+      max-height: 880px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
+    }
+
+    @media (min-width: 440px) {
+      #app-shell {
+        height: 94dvh;
+        border-radius: 22px;
+        border: 2px solid #38271B;
+      }
+    }
+
+    /* Doorlopend 16-bit notenhout op de achtergrond */
+    #wood-bg-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 16-bit Lakzegel-viering overlay */
+    #celebration-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      z-index: 80;
+      pointer-events: none;
+    }
+
+    .app-layer {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      padding: 12px 14px 14px;
+      gap: 10px;
+    }
+
+    /* ==========================================================================
+       ZACHTERE, MINDER "KNOPPERIGE" HOUT-ELEMENTEN (AFGESCHUIND PIXEL-HOUT)
+       ========================================================================== */
+    .wood-slot {
+      background: rgba(16, 11, 8, 0.65);
+      border-top: 2px solid #0E0906;
+      border-left: 2px solid #120B08;
+      border-right: 1px solid #432F21;
+      border-bottom: 1px solid #4E3727;
+      border-radius: 6px;
+      padding: 4px;
+    }
+
+    .wood-token {
+      position: relative;
+      border: 1px solid #140D09;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: transform 0.06s ease, filter 0.12s ease;
+      box-shadow:
+        inset 0 1px 0 rgba(196, 174, 140, 0.22),
+        inset 0 -2px 0 rgba(12, 8, 5, 0.65),
+        0 2px 4px rgba(0, 0, 0, 0.45);
+    }
+
+    .wood-token:active {
+      transform: translateY(1px);
+    }
+
+    .token-oxblood {
+      background: linear-gradient(180deg, #52241F 0%, #411B17 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(198, 174, 138, 0.38),
+        inset 0 -2px 0 rgba(20, 8, 6, 0.8),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+      color: #D8C6AA;
+    }
+
+    .token-oak {
+      background: linear-gradient(180deg, #3D2B1F 0%, #2F2017 100%);
+      color: #AA967E;
+    }
+
+    .token-olive {
+      background: linear-gradient(180deg, #3A4231 0%, #2B3224 100%);
+      color: #BCC4B0;
+    }
+
+    .token-cool {
+      background: linear-gradient(180deg, #342D28 0%, #26201D 100%);
+      color: #A89F94;
+    }
+
+    .token-beige {
+      background: linear-gradient(180deg, #8F7B5E 0%, #78664C 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(226, 210, 184, 0.45),
+        inset 0 -2px 0 rgba(36, 26, 16, 0.7),
+        0 2px 4px rgba(0, 0, 0, 0.45);
+      color: #1E140D;
+    }
+
+    /* ==========================================================================
+       BOVENSTE BALK (RUSTIG IN HET HOUT VERZONKEN)
+       ========================================================================== */
+    .top-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 6px;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      height: 40px;
+      font-family: 'Merriweather', serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      padding: 0 10px;
+      flex-direction: row;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 40px;
+      font-size: 14px;
+      opacity: 0.75;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      gap: 10px;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ==========================================================================
+       SCHERM 1: UIT JE HOOFD (PUUR RAAM + PERKAMENTROL ZONDER META-TEKST)
+       ========================================================================== */
+    .window-frame {
+      position: relative;
+      height: 112px;
+      flex-shrink: 0;
+      padding: 5px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #38271C 0%, #281B13 100%);
+      border: 1px solid #140D09;
+      box-shadow:
+        inset 0 1px 0 rgba(196, 174, 140, 0.2),
+        0 3px 8px rgba(0, 0, 0, 0.55);
+    }
+
+    .window-sponning {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-top: 2px solid #0D0906;
+      border-left: 2px solid #0D0906;
+      border-right: 1px solid #5A402D;
+      border-bottom: 1px solid #72543D;
+      border-radius: 3px;
+      overflow: hidden;
+      background: #141923;
+    }
+
+    #lake-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* Perkamentrol tussen twee gedraaide houten rolstokken */
+    .scroll-assembly {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .scroll-roller {
+      height: 12px;
+      width: 100%;
+      flex-shrink: 0;
+      border-radius: 4px;
+      border: 1px solid #120C09;
+      background:
+        linear-gradient(90deg,
+          #9A8466 0px, #7D684D 12px,
+          #18100B 12px, #18100B 14px,
+          #4E3726 14px, #3E2B1D calc(100% - 14px),
+          #18100B calc(100% - 14px), #18100B calc(100% - 12px),
+          #7D684D calc(100% - 12px), #9A8466 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(216, 196, 164, 0.35),
+        inset 0 -2px 0 rgba(16, 10, 7, 0.8),
+        0 3px 6px rgba(0, 0, 0, 0.55);
+      z-index: 3;
+    }
+
+    .scroll-body {
+      flex: 1;
+      min-height: 0;
+      margin: 0 9px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 18px 14px;
+      border-left: 1px solid #5C4833;
+      border-right: 1px solid #4E3C2A;
+      /* Gedempt, warm oud papier (niet fel of wit) */
+      background-color: #B49F80;
+      background-image:
+        linear-gradient(180deg,
+          rgba(32, 21, 12, 0.35) 0%,
+          rgba(32, 21, 12, 0.0) 9%,
+          rgba(32, 21, 12, 0.0) 91%,
+          rgba(32, 21, 12, 0.38) 100%);
+      box-shadow: inset 0 0 22px rgba(46, 31, 17, 0.28);
+    }
+
+    #braindump-input {
+      flex: 1;
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      background: transparent;
+      font-family: 'Merriweather', serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--ink-dark);
+      user-select: text;
+    }
+
+    #braindump-input::placeholder {
+      color: rgba(42, 30, 20, 0.48);
+      font-style: italic;
+    }
+
+    .scroll-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding-top: 4px;
+      min-height: 78px;
+    }
+
+    #spreek-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 2px solid #867052;
+      background: radial-gradient(circle at 35% 30%, #642D26 0%, #4B201B 62%, #341512 100%);
+      box-shadow:
+        0 0 0 2px #26100E,
+        0 4px 10px rgba(24, 14, 9, 0.5),
+        inset 0 2px 3px rgba(216, 196, 164, 0.35),
+        inset 0 -3px 5px rgba(20, 8, 7, 0.8);
+      color: #D8C6AA;
+      font-family: 'Merriweather', serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    #spreek-btn.listening {
+      box-shadow:
+        0 0 0 3px #B8A282,
+        0 0 16px rgba(130, 56, 46, 0.7),
+        inset 0 2px 4px rgba(240, 220, 185, 0.5);
+      animation: pulse-wax 1.1s infinite alternate;
+    }
+
+    @keyframes pulse-wax {
+      from { transform: scale(1); }
+      to   { transform: scale(1.05); }
+    }
+
+    .quill-illust {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      width: 44px;
+      height: 54px;
+      image-rendering: pixelated;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .bottom-actions-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .action-big-btn {
+      height: 56px;
+      padding: 4px 10px;
+      font-family: 'Merriweather', serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    /* ==========================================================================
+       SCHERM 2: HET BORD (SUBTIEL HOUTSNIJWERK IN ACHTERGROND + ORGANISCHE BRIEFJES)
+       ========================================================================== */
+    .board-surface {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      border-radius: 6px;
+      border-top: 2px solid #0E0906;
+      border-left: 2px solid #120B08;
+      border-right: 1px solid #483324;
+      border-bottom: 1px solid #563D2B;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Canvas voor het eikenhouten bord met warm/koel lichtval & subtiel houtsnijwerk */
+    #board-wood-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .board-scroll-area {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 28px 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .board-scroll-area::-webkit-scrollbar {
+      width: 4px;
+    }
+    .board-scroll-area::-webkit-scrollbar-thumb {
+      background: rgba(120, 90, 65, 0.45);
+      border-radius: 2px;
+    }
+
+    /* 2-koloms prikbord-veld waarin briefjes als losse perkamentjes hangen (geen brede balken!) */
+    .parchment-cluster {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 9px;
+      align-items: start;
+    }
+
+    /* Elk briefje heeft een eigen 16-bit gekartelde perkament-achtergrond op canvas */
+    .parchment-scrap {
+      position: relative;
+      padding: 13px 11px 11px;
+      cursor: pointer;
+      transition: transform 0.1s ease, filter 0.12s ease;
+      min-height: 68px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .parchment-scrap:nth-child(odd) {
+      transform: rotate(-0.6deg);
+    }
+    .parchment-scrap:nth-child(even) {
+      transform: rotate(0.55deg);
+      margin-top: 3px;
+    }
+
+    .parchment-scrap:active {
+      transform: scale(0.98);
+    }
+
+    .scrap-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .scrap-title {
+      position: relative;
+      z-index: 2;
+      font-family: 'Merriweather', serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      line-height: 1.38;
+      color: #2A1D13;
+      word-break: break-word;
+    }
+
+    .parchment-scrap.cool .scrap-title {
+      color: #27221E;
+      font-weight: 400;
+    }
+
+    .scrap-meta {
+      position: relative;
+      z-index: 2;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #5E4530;
+    }
+
+    .parchment-scrap.cool .scrap-meta {
+      color: #4D453D;
+    }
+
+    .scrap-day-tag {
+      padding: 1px 4px;
+      background: rgba(110, 86, 58, 0.25);
+      border-radius: 2px;
+      color: #3E2B1C;
+    }
+
+    /* Subtiele scheidingsruimte tussen Zeker Belangrijk (boven) en Lekker Belangrijk (onder) */
+    .carved-zone-spacer {
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    /* Onderste balk op het bord: Lakzegel, Ongedaan maken (Undo) & Luik */
+    .board-tools-row {
+      display: flex;
+      gap: 7px;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    .seal-mode-btn {
+      flex: 1;
+      height: 46px;
+      flex-direction: row;
+      justify-content: center;
+      padding: 0 10px;
+      gap: 8px;
+      font-family: 'Merriweather', serif;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .seal-mode-btn.active-mode {
+      box-shadow:
+        0 0 0 2px var(--beige-hi),
+        inset 0 1px 0 #E2D2B8,
+        0 2px 6px rgba(0, 0, 0, 0.7);
+      filter: brightness(1.14);
+    }
+
+    .undo-btn {
+      height: 46px;
+      padding: 0 11px;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: none;
+      flex-direction: row;
+      gap: 5px;
+    }
+
+    .undo-btn.visible {
+      display: flex;
+    }
+
+    .days-tray {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+
+    .day-btn {
+      height: 34px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 0;
+      position: relative;
+    }
+
+    .day-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #C6B08E;
+      position: absolute;
+      bottom: 3px;
+    }
+
+    .day-btn.token-beige .day-dot {
+      background: #2C1E14;
+    }
+
+    /* ==========================================================================
+       SCHERM 3: OPEN BRIEFJE (MET BEIGE 'JOUW ZET' & DIRECTE DOE-KNOP)
+       ========================================================================== */
+    .open-card-scroll {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .open-card-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      margin: 0 9px;
+      padding: 14px 16px;
+      border-left: 1px solid #5C4833;
+      border-right: 1px solid #4E3C2A;
+      background-color: #B49F80;
+      background-image:
+        linear-gradient(180deg,
+          rgba(32, 21, 12, 0.3) 0%,
+          rgba(32, 21, 12, 0.0) 9%,
+          rgba(32, 21, 12, 0.0) 91%,
+          rgba(32, 21, 12, 0.34) 100%);
+      color: var(--ink-dark);
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .top-nail {
+      width: 10px;
+      height: 10px;
+      margin: 0 auto -2px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #DFCFB4 0%, #967C58 65%, #3E2E1C 100%);
+      border: 1px solid #261B11;
+      box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+
+    #detail-title {
+      font-family: 'Merriweather', serif;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.38;
+      color: var(--ink-dark);
+      margin: 0;
+    }
+
+    .jouw-zet-box {
+      padding: 11px 13px;
+      background: rgba(154, 132, 100, 0.45);
+      border: 1px solid #6E563B;
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgba(230, 215, 190, 0.35);
+    }
+
+    .jouw-zet-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      color: #4A221D;
+      margin-bottom: 4px;
+    }
+
+    #detail-jouw-zet {
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.44;
+      color: var(--ink-dark);
+    }
+
+    .history-toggle-btn {
+      width: 100%;
+      padding: 8px 11px;
+      background: rgba(130, 114, 92, 0.35);
+      border: 1px solid #6E5A44;
+      border-radius: 4px;
+      color: #33251A;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    #detail-history-box {
+      display: none;
+      padding: 9px 11px;
+      background: rgba(120, 104, 84, 0.25);
+      border: 1px solid #6E5A44;
+      border-radius: 4px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: #2C2016;
+    }
+
+    /* De DOE-KNOP op een briefje (opent mail of zet direct in actiestand) */
+    #detail-doe-btn {
+      height: 44px;
+      font-family: 'Merriweather', serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: none;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    .warm-cool-switch {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      padding-top: 2px;
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       MODALS (DAG-SPEELBORD EN INSTELLINGEN)
+       ========================================================================== */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 7, 5, 0.82);
+      z-index: 60;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-height: 84%;
+      overflow-y: auto;
+      background: #241912;
+      border: 1px solid #6E563E;
+      border-radius: 8px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .modal-title {
+      font-family: 'Merriweather', serif;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #D8C6AA;
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--beige-hi);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .pixel-input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #140D09;
+      border: 1px solid #523C2A;
+      border-radius: 4px;
+      color: #D8C6AA;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      user-select: text;
+    }
+
+    .day-modal-item {
+      padding: 10px 12px;
+      background: #B49F80;
+      color: var(--ink-dark);
+      border-radius: 4px;
+      border: 1px solid #5E4933;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #toast {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      background: #281B13;
+      border: 1px solid var(--beige-hi);
+      border-radius: 6px;
+      color: #D8C6AA;
+      padding: 9px 13px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+      z-index: 90;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div id="app-shell">
+    <canvas id="wood-bg-canvas"></canvas>
+    <canvas id="celebration-canvas"></canvas>
+
+    <div class="app-layer">
+      <!-- BOVENSTE TAB-BALK -->
+      <div class="wood-slot top-bar">
+        <button id="nav-tab1" class="wood-token token-oxblood tab-btn" onclick="switchTab(1)">
+          <span>Uit je hoofd</span>
+        </button>
+        <button id="nav-tab2" class="wood-token token-oak tab-btn" onclick="switchTab(2)">
+          <span>Het Bord</span>
+        </button>
+        <button class="wood-token token-oak icon-btn" title="Instellingen" onclick="openSettingsModal()">
+          ⚙
+        </button>
+      </div>
+
+      <!-- ====================================================================
+           SCHERM 1: UIT JE HOOFD (GEEN META-TEKSTEN, PUUR RAAM & PERKAMENT)
+           ==================================================================== -->
+      <div id="screen-1" class="screen active">
+        <div class="window-frame">
+          <div class="window-sponning">
+            <canvas id="lake-canvas" width="180" height="54"></canvas>
+          </div>
+        </div>
+
+        <div class="scroll-assembly">
+          <div class="scroll-roller"></div>
+          <div class="scroll-body">
+            <textarea
+              id="braindump-input"
+              placeholder="Schrijf of spreek uit wat er in je hoofd zit..."
+            ></textarea>
+            <div class="scroll-footer">
+              <button id="spreek-btn" onclick="toggleSpeech()">
+                <span id="spreek-label">Spreek</span>
+              </button>
+              <canvas id="quill-canvas" class="quill-illust" width="24" height="29"></canvas>
+            </div>
+          </div>
+          <div class="scroll-roller"></div>
+        </div>
+
+        <div class="bottom-actions-2col">
+          <button class="wood-token token-oak action-big-btn" onclick="prikOpBord()">
+            Prik op bord
+          </button>
+          <button class="wood-token token-olive action-big-btn" onclick="stuurNaarBoek()">
+            Naar boek
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           SCHERM 2: HET BORD (SUBTIEL HOUTSNIJWERK IN HET HOUT + LOSSE BRIEFJES)
+           ==================================================================== -->
+      <div id="screen-2" class="screen">
+        <div id="quest-board" class="board-surface">
+          <!-- 16-bit Eikenhouten planken + subtiel ingekerfd 'zeker belangrijk' & 'lekker belangrijk' -->
+          <canvas id="board-wood-canvas"></canvas>
+
+          <div class="board-scroll-area">
+            <!-- Bovenste zone: Warm houtlicht (zeker belangrijk in het hout gekerfd) -->
+            <div id="warm-notes-cluster" class="parchment-cluster"></div>
+
+            <!-- Overgang naar Koel schaduwhout (lekker belangrijk in het hout gekerfd) -->
+            <div id="carved-divider-anchor" class="carved-zone-spacer"></div>
+
+            <div id="cool-notes-cluster" class="parchment-cluster"></div>
+          </div>
+        </div>
+
+        <!-- Onderste gereedschapsrij: Lakzegel, Ongedaan maken (Undo) & Logboek -->
+        <div class="board-tools-row">
+          <button id="seal-mode-btn" class="wood-token token-oxblood seal-mode-btn" onclick="toggleSealMode()">
+            <canvas id="stamp-icon-1" width="20" height="20" style="width:24px;height:24px;image-rendering:pixelated;"></canvas>
+            <span id="seal-mode-title">Lakzegel</span>
+          </button>
+          <button id="undo-btn" class="wood-token token-beige undo-btn" onclick="undoLastAction()" title="Zet je laatste actie terug">
+            <span>↶ Terug</span>
+          </button>
+          <button class="wood-token token-cool" style="height:46px;padding:0 12px;font-size:11.5px;font-weight:700;" onclick="showAfgerondLog()">
+            <span>Kist</span>
+          </button>
+        </div>
+
+        <div class="wood-slot days-tray" id="board-days-tray"></div>
+      </div>
+
+      <!-- ====================================================================
+           SCHERM 3: OPEN BRIEFJE (MET DUIDELIJKE DOE-KNOP & DAG-KEUZE)
+           ==================================================================== -->
+      <div id="screen-3" class="screen">
+        <div class="scroll-assembly open-card-scroll">
+          <div class="scroll-roller"></div>
+          <div class="open-card-body">
+            <div class="top-nail"></div>
+            <h2 id="detail-title"></h2>
+
+            <div class="jouw-zet-box">
+              <div class="jouw-zet-label">JOUW ZET</div>
+              <div id="detail-jouw-zet" contenteditable="true" spellcheck="false"></div>
+            </div>
+
+            <!-- DE DOE-KNOP: opent direct de mail of start de actie -->
+            <button id="detail-doe-btn" class="wood-token token-oxblood" onclick="triggerDoeAction()">
+              <span id="detail-doe-label">Nu doen</span>
+            </button>
+
+            <button class="history-toggle-btn" onclick="toggleHistoryDetails()">
+              <span id="detail-history-label">+ Achtergrond & voorgeschiedenis</span>
+            </button>
+            <div id="detail-history-box"></div>
+
+            <div class="warm-cool-switch" onclick="toggleCurrentNoteWeight()">
+              <span id="weight-warm-lbl">● Zeker belangrijk</span>
+              <span>·</span>
+              <span id="weight-cool-lbl">○ Lekker belangrijk</span>
+            </div>
+          </div>
+          <div class="scroll-roller"></div>
+        </div>
+
+        <div class="wood-slot days-tray" id="detail-days-tray"></div>
+
+        <div class="board-tools-row">
+          <button class="wood-token token-oxblood seal-mode-btn" style="height:50px;" onclick="stampCurrentNoteDone()">
+            <canvas id="stamp-icon-2" width="20" height="20" style="width:26px;height:26px;image-rendering:pixelated;"></canvas>
+            <span>Lakzegel erop (Klaar)</span>
+          </button>
+          <button class="wood-token token-cool" style="height:50px;padding:0 16px;font-family:'Merriweather',serif;font-size:12px;font-weight:700;" onclick="deleteCurrentNote()">
+            <span>Weg</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 1: DAG-SPEELBORD (MET KNOP OM TERUG OP HET BORD TE HANGEN OF TE OPENEN) -->
+    <div id="day-modal" class="modal-backdrop" onclick="if(event.target===this)closeDayModal()">
+      <div class="modal-box">
+        <div class="modal-title">
+          <span id="day-modal-title">Dinsdag</span>
+          <button class="wood-token token-cool" style="padding:4px 10px;font-size:11px;" onclick="closeDayModal()">Sluit</button>
+        </div>
+        <div id="day-modal-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: INSTELLINGEN (ONTWERP-OPTIES VOOR HET RAAMPJE & GITHUB SYNC) -->
+    <div id="settings-modal" class="modal-backdrop" onclick="if(event.target===this)closeSettingsModal()">
+      <div class="modal-box">
+        <div class="modal-title">
+          <span>Instellingen</span>
+          <button class="wood-token token-cool" style="padding:4px 10px;font-size:11px;" onclick="closeSettingsModal()">Sluit</button>
+        </div>
+
+        <div style="padding:10px;background:#18110C;border:1px solid #483424;border-radius:6px;font-size:11.5px;line-height:1.45;color:var(--beige-soft);">
+          <strong>Raampje sfeer (ontwerp-keuze):</strong>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="toggleWindowBrightness()">Wissel Gedempt / Helderder</button>
+            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride(null)">Live Alkmaar</button>
+            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride('night')">Nacht</button>
+            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride('day')">Dag</button>
+            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride('rain')">Regen</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label">GitHub Repository</label>
+          <input id="cfg-gh-repo" class="pixel-input" placeholder="bijv. gerwald/ai-werkplaats" />
+        </div>
+        <div>
+          <label class="field-label">GitHub Token</label>
+          <input id="cfg-gh-token" type="password" class="pixel-input" placeholder="ghp_..." />
+        </div>
+        <div>
+          <label class="field-label">Claude API-sleutel (optioneel)</label>
+          <input id="cfg-claude-key" type="password" class="pixel-input" placeholder="sk-ant-..." />
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+          <button class="wood-token token-oxblood" style="height:40px;font-weight:700;font-size:12px;" onclick="saveSettings()">
+            Bewaar
+          </button>
+          <button class="wood-token token-oak" style="height:40px;font-weight:700;font-size:12px;" onclick="pullFromGitHub()">
+            Haal kladblok op
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. 16-BIT PIXEL & GELUIDS-ENGINE (P=2, 4x4 BAYER DITHER)
+    // =========================================================================
+    const BAYER4 = [
+      [ 0,  8,  2, 10],
+      [12,  4, 14,  6],
+      [ 3, 11,  1,  9],
+      [15,  7, 13,  5]
+    ];
+
+    function hash2d(x, y) {
+      let n = (Math.imul(x, 374761393) + Math.imul(y, 668265263)) ^ 0x5bf03635;
+      n = Math.imul(n ^ (n >>> 13), 1274126177);
+      return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+    }
+
+    function smoothNoise(x, y) {
+      const ix = Math.floor(x), iy = Math.floor(y);
+      let fx = x - ix, fy = y - iy;
+      fx = fx * fx * (3 - 2 * fx);
+      fy = fy * fy * (3 - 2 * fy);
+      const n00 = hash2d(ix, iy),     n10 = hash2d(ix + 1, iy);
+      const n01 = hash2d(ix, iy + 1), n11 = hash2d(ix + 1, iy + 1);
+      return (n00 + fx * (n10 - n00)) + fy * ((n01 + fx * (n11 - n01)) - (n00 + fx * (n10 - n00)));
+    }
+
+    function ditherStep(pal, val, x, y) {
+      const v = Math.max(0, Math.min(0.999, val));
+      const n = pal.length - 1;
+      const pos = v * n;
+      const idx = Math.floor(pos);
+      const frac = pos - idx;
+      const thr = (BAYER4[y & 3][x & 3] + 0.5) / 16.0;
+      return (frac > thr && idx < n) ? pal[idx + 1] : pal[idx];
+    }
+
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playQuillScratch() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const dur = 0.03;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.45)) * 0.11;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 2500 + Math.random() * 500;
+      filter.Q.value = 3.0;
+      src.connect(filter);
+      filter.connect(ctx.destination);
+      src.start();
+    }
+
+    function playNailTap() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [175, 860].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === 0 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.45, now + 0.08);
+        gain.gain.setValueAtTime(idx === 0 ? 0.22 : 0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.085);
+      });
+    }
+
+    function playBellChime() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [587.33, 880, 1174.66].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.055);
+        gain.gain.setValueAtTime(0.12, now + i * 0.055);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.42);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.055);
+        osc.stop(now + i * 0.055 + 0.45);
+      });
+    }
+
+    function playBookChord() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [293.66, 369.99, 440.0, 587.33].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + i * 0.07);
+        gain.gain.setValueAtTime(0.11, now + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.65);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.07);
+        osc.stop(now + i * 0.07 + 0.7);
+      });
+    }
+
+    function playSealCelebrationSound(variant) {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const thud = ctx.createOscillator();
+      const thudGain = ctx.createGain();
+      thud.type = 'sine';
+      thud.frequency.setValueAtTime(135, now);
+      thud.frequency.exponentialRampToValueAtTime(42, now + 0.16);
+      thudGain.gain.setValueAtTime(0.35, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      thud.connect(thudGain);
+      thudGain.connect(ctx.destination);
+      thud.start(now);
+      thud.stop(now + 0.19);
+
+      const chords = [
+        [330, 415.3, 493.88, 659.25],
+        [261.63, 329.63, 392.0, 523.25],
+        [293.66, 440.0, 554.37, 587.33],
+        [220.0, 329.63, 440.0]
+      ];
+      const notes = chords[variant % chords.length];
+      notes.forEach((f, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = variant === 3 ? 'sine' : 'triangle';
+        const t0 = now + 0.11 + idx * 0.065;
+        osc.frequency.setValueAtTime(f, t0);
+        g.gain.setValueAtTime(0.12, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.58);
+      });
+    }
+
+    // =========================================================================
+    // 2. ACHTERGROND HOUT, SUBTIEL HOUTSNIJWERK OP HET BORD & LOSSE PERKAMENTJES
+    // =========================================================================
+    const BG_WOOD_PAL = [
+      [24, 17, 13],
+      [30, 21, 16],
+      [36, 26, 19],
+      [42, 30, 22],
+      [49, 36, 27]
+    ];
+
+    function renderWoodBackground() {
+      const c = document.getElementById('wood-bg-canvas');
+      const W = 195, H = 415;
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+      const img = ctx.createImageData(W, H);
+      const d = img.data;
+
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const grain1 = Math.sin(x * 0.35 + smoothNoise(x * 0.08, y * 0.025) * 4.5) * 0.16;
+          const grain2 = (smoothNoise(x * 0.25, y * 0.06) - 0.5) * 0.20;
+          const dx = (x - W * 0.5) / (W * 0.5);
+          const dy = (y - H * 0.35) / (H * 0.65);
+          const vig = 1.0 - (dx * dx * 0.22 + dy * dy * 0.18);
+          const val = Math.max(0.05, Math.min(0.95, 0.46 * vig + grain1 + grain2));
+          const rgb = ditherStep(BG_WOOD_PAL, val, x, y);
+          const i = (y * W + x) * 4;
+          d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    /**
+     * Tekent het eikenhouten prikbord ZONDER balkjes:
+     * - Bovenin warm haardlicht op de planken, onderin koeler schaduwhout.
+     * - Subtiel houtsnijwerk ('zeker belangrijk' en 'lekker belangrijk' + fijne rank-krul)
+     *   direct in het hout gekerfd (diep ingelegd, niet schreeuwerig om te lezen).
+     */
+    function renderBoardWoodWithCarving() {
+      const c = document.getElementById('board-wood-canvas');
+      if (!c) return;
+      const W = 180, H = 290;
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+      const img = ctx.createImageData(W, H);
+      const d = img.data;
+
+      const warmPlankPal = [
+        [34, 23, 16],
+        [43, 29, 20],
+        [53, 37, 25],
+        [64, 45, 31],
+        [75, 53, 37]
+      ];
+      const coolPlankPal = [
+        [22, 18, 16],
+        [28, 23, 20],
+        [35, 29, 25],
+        [42, 35, 30],
+        [49, 41, 35]
+      ];
+
+      // Zachte diagonale/verticale overgang van warm haardlicht (boven) naar koel schaduwhout (onder)
+      const splitCenter = 158;
+
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const plank = Math.floor(x / 30);
+          const seam = (x % 30 === 0 && x > 0);
+          const grain = Math.sin(y * 0.14 + plank * 1.7 + smoothNoise(x * 0.12, y * 0.04) * 2.5) * 0.12;
+          // Diagonale lichtval van rechtsboven (haard) naar linksonder (schaduw)
+          const hearthGlow = ((x / W) * 0.35 + (1 - y / H) * 0.35);
+          const val = Math.max(0.08, Math.min(0.92, 0.25 + hearthGlow + grain));
+
+          // Zachte dither-overgang rondom splitCenter (geen harde lijn of balk!)
+          const blend = Math.max(0, Math.min(1, (y - (splitCenter - 18)) / 36));
+          const useCool = (blend > ((BAYER4[y & 3][x & 3] + 0.5) / 16.0));
+          const pal = useCool ? coolPlankPal : warmPlankPal;
+          const rgb = seam ? [16, 11, 8] : ditherStep(pal, val, x, y);
+
+          const i = (y * W + x) * 4;
+          d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+
+      // Subtiel houtsnijwerk (inscriptie + rankje) direct in het hout gegraveerd:
+      // 1px donkere dieptegroef erboven + 1px zacht-lichte onderrand
+      ctx.save();
+      ctx.font = 'italic 700 8.5px Georgia, serif';
+      ctx.textAlign = 'center';
+
+      const drawCarvedInscription = (text, cy, isWarmZone) => {
+        const cx = W / 2;
+        // Subtiele ingekerfde hout-ornament-lijn links en rechts
+        const lineW = 28;
+        const gap = 46;
+        ctx.fillStyle = 'rgba(12, 8, 5, 0.55)';
+        ctx.fillRect(cx - gap - lineW, cy - 3, lineW, 1);
+        ctx.fillRect(cx + gap, cy - 3, lineW, 1);
+        ctx.fillStyle = isWarmZone ? 'rgba(110, 80, 54, 0.28)' : 'rgba(80, 70, 60, 0.24)';
+        ctx.fillRect(cx - gap - lineW, cy - 2, lineW, 1);
+        ctx.fillRect(cx + gap, cy - 2, lineW, 1);
+
+        // Ingekerfde letters: nauwelijks contrast, puur reliëf in het hout
+        ctx.fillStyle = 'rgba(10, 7, 4, 0.62)';
+        ctx.fillText(text, cx, cy);
+        ctx.fillStyle = isWarmZone ? 'rgba(125, 92, 62, 0.32)' : 'rgba(92, 80, 68, 0.28)';
+        ctx.fillText(text, cx, cy + 0.8);
+      };
+
+      drawCarvedInscription('zeker belangrijk', 12, true);
+      drawCarvedInscription('lekker belangrijk', splitCenter + 6, false);
+      ctx.restore();
+    }
+
+    /**
+     * Tekent een organisch 16-bit perkament-snippertje (géén vierkant CSS-blok!):
+     * gekartelde pixel-randen, zachte verouderde papier-tinten en een klein koperen spijkertje bovenin.
+     */
+    function drawParchmentScrapCanvas(canvas, isWarm, seed) {
+      const W = 86, H = 48;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(W, H);
+      const d = img.data;
+
+      // Gedempte, oude perkament-tinten zodat ze NIET fel afsteken tegen het donkere hout
+      const warmParch = [
+        [146, 126, 98],
+        [158, 138, 109],
+        [170, 150, 120],
+        [180, 160, 130]
+      ];
+      const coolParch = [
+        [124, 114, 100],
+        [136, 126, 112],
+        [146, 136, 122],
+        [156, 146, 132]
+      ];
+      const pal = isWarm ? warmParch : coolParch;
+
+      for (let y = 0; y < H; y++) {
+        // Organische, gekartelde rand per rij/kolom
+        const leftJag  = 2 + Math.floor(hash2d(seed, Math.floor(y / 3)) * 2.4);
+        const rightJag = W - 3 - Math.floor(hash2d(seed + 7, Math.floor(y / 3)) * 2.4);
+
+        for (let x = 0; x < W; x++) {
+          const topJag = 2 + Math.floor(hash2d(Math.floor(x / 4), seed + 13) * 1.8);
+          const botJag = H - 3 - Math.floor(hash2d(Math.floor(x / 4), seed + 29) * 2.2);
+
+          const i = (y * W + x) * 4;
+
+          // Zachte slagschaduw rechtsonder op het hout
+          if (x >= leftJag + 2 && x <= rightJag + 2 && y >= topJag + 2 && y <= botJag + 2 &&
+              (x > rightJag || y > botJag)) {
+            d[i] = 10; d[i + 1] = 7; d[i + 2] = 5; d[i + 3] = 135;
+            continue;
+          }
+
+          if (x < leftJag || x > rightJag || y < topJag || y > botJag) {
+            d[i + 3] = 0;
+            continue;
+          }
+
+          // Donkerder verouderd randje langs de scheurrand
+          const isEdge = (x === leftJag || x === rightJag || y === topJag || y === botJag);
+          let rgb;
+          if (isEdge) {
+            rgb = isWarm ? [102, 82, 58] : [82, 74, 64];
+          } else {
+            // Zachte vignettering naar de randen van het briefje
+            const edgeDist = Math.min(x - leftJag, rightJag - x, y - topJag, botJag - y) / 8.0;
+            const noise = (smoothNoise(x * 0.25 + seed, y * 0.25) - 0.5) * 0.16;
+            const val = Math.min(0.95, 0.35 + Math.min(1, edgeDist) * 0.5 + noise);
+            rgb = ditherStep(pal, val, x, y);
+          }
+
+          d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255;
+        }
+      }
+
+      // Klein 16-bit koperen spijkertje midden-bovenin het briefje
+      const nx = Math.floor(W / 2), ny = 5;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const idx = ((ny + dy) * W + (nx + dx)) * 4;
+          const hi = (dx + dy < 0);
+          d[idx]     = hi ? 204 : 112;
+          d[idx + 1] = hi ? 182 : 86;
+          d[idx + 2] = hi ? 144 : 56;
+          d[idx + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(img, 0, 0);
+    }
+
+    function renderQuillAndStamps() {
+      const qc = document.getElementById('quill-canvas');
+      const qctx = qc.getContext('2d');
+      qctx.clearRect(0, 0, 24, 29);
+      for (let y = 19; y < 28; y++) {
+        const w = y > 21 ? 5 : 3;
+        for (let x = 8 - w; x <= 8 + w; x++) {
+          qctx.fillStyle = y <= 20 ? '#B59F7E' : (x < 7 ? '#36404E' : '#1B2028');
+          qctx.fillRect(x, y, 1, 1);
+        }
+      }
+      for (let s = 0; s < 19; s++) {
+        const qx = 8 + Math.floor(s * 0.65), qy = 19 - s;
+        qctx.fillStyle = '#DFCFB4';
+        qctx.fillRect(qx, qy, 1, 1);
+        if (s > 4) {
+          for (let fw = 1; fw < 5 - Math.floor(s / 6); fw++) {
+            qctx.fillStyle = (s % 3 === 0) ? '#9E8868' : '#C8B494';
+            qctx.fillRect(qx - fw, qy, 1, 1);
+          }
+        }
+      }
+
+      ['stamp-icon-1', 'stamp-icon-2'].forEach((id) => {
+        const sc = document.getElementById(id);
+        if (!sc) return;
+        const sctx = sc.getContext('2d');
+        sctx.clearRect(0, 0, 20, 20);
+        const cx = 10;
+        for (let y = 2; y < 10; y++) {
+          const hw = y < 5 ? 3 : 2;
+          for (let x = cx - hw; x <= cx + hw; x++) {
+            sctx.fillStyle = x <= cx ? '#7A563C' : '#4A3323';
+            sctx.fillRect(x, y, 1, 1);
+          }
+        }
+        for (let y = 10; y < 15; y++) {
+          const mw = y < 12 ? 4 : 7;
+          for (let x = cx - mw; x <= cx + mw; x++) {
+            sctx.fillStyle = x <= cx ? '#C8B494' : '#8A7254';
+            sctx.fillRect(x, y, 1, 1);
+          }
+        }
+        for (let y = 15; y < 18; y++) {
+          for (let x = cx - 7; x <= cx + 7; x++) {
+            sctx.fillStyle = '#7E362E';
+            sctx.fillRect(x, y, 1, 1);
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // 3. LIVE 16-BIT RAAM (ZONDER TEKST-PILLEN EROP)
+    // =========================================================================
+    const lakeState = {
+      brightMode: false,
+      weatherOverride: null,
+      isDay: false,
+      weatherCode: 0,
+      tempC: 11,
+      rippleEnergy: 0,
+      t: 0
+    };
+
+    async function fetchAlkmaarWeather() {
+      try {
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=52.63&longitude=4.75&current=temperature_2m,is_day,weather_code&timezone=auto';
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.current) {
+          lakeState.isDay = data.current.is_day === 1;
+          lakeState.weatherCode = data.current.weather_code || 0;
+          lakeState.tempC = Math.round(data.current.temperature_2m);
+        }
+      } catch (_) {}
+    }
+
+    function toggleWindowBrightness() {
+      lakeState.brightMode = !lakeState.brightMode;
+      playNailTap();
+      showToast(lakeState.brightMode ? 'Raam: iets helderder' : 'Raam: chic gedempt');
+    }
+
+    function setWeatherOverride(mode) {
+      lakeState.weatherOverride = mode;
+      showToast(mode ? `Sfeer: ${mode}` : 'Live weer Alkmaar');
+    }
+
+    function pulseLakeRipple(amount = 0.7) {
+      lakeState.rippleEnergy = Math.min(1.5, lakeState.rippleEnergy + amount);
+    }
+
+    function drawLakeFrame() {
+      const c = document.getElementById('lake-canvas');
+      if (!c) return;
+      const W = c.width, H = c.height;
+      const ctx = c.getContext('2d');
+      const img = ctx.createImageData(W, H);
+      const d = img.data;
+
+      lakeState.t += 0.06;
+      lakeState.rippleEnergy *= 0.94;
+      const t = lakeState.t;
+      const bright = lakeState.brightMode;
+      const mode = lakeState.weatherOverride;
+      const isDay = mode === 'day' ? true : (mode === 'night' ? false : lakeState.isDay);
+      const isRain = mode === 'rain' || [51,53,55,61,63,65,80,81,82].includes(lakeState.weatherCode);
+
+      let skyPal, waterPal, orbCore, orbRim;
+      if (!isDay) {
+        skyPal = bright
+          ? [[20, 28, 46], [30, 42, 66], [42, 58, 88], [58, 78, 112], [80, 102, 138]]
+          : [[18, 22, 32], [24, 31, 44], [32, 42, 58], [44, 56, 74], [60, 74, 92]];
+        waterPal = bright
+          ? [[16, 24, 40], [26, 38, 60], [38, 54, 82], [54, 74, 106]]
+          : [[15, 20, 29], [22, 29, 42], [30, 40, 56], [42, 54, 72]];
+        orbCore = bright ? [230, 212, 178] : [192, 172, 140];
+        orbRim  = bright ? [190, 166, 128] : [142, 122, 94];
+      } else {
+        skyPal = bright
+          ? [[58, 78, 98], [78, 102, 122], [104, 128, 144], [136, 156, 162], [178, 182, 168]]
+          : [[42, 54, 66], [56, 70, 82], [74, 88, 98], [96, 108, 112], [128, 130, 122]];
+        waterPal = bright
+          ? [[36, 52, 68], [50, 70, 88], [68, 90, 108], [92, 114, 126]]
+          : [[28, 38, 48], [38, 50, 62], [52, 66, 78], [70, 84, 94]];
+        orbCore = bright ? [236, 218, 182] : [202, 182, 148];
+        orbRim  = bright ? [198, 172, 130] : [158, 136, 104];
+      }
+
+      const mx = Math.floor(W * 0.77), my = Math.floor(H * 0.29);
+      const horizon = Math.floor(H * 0.61);
+
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let col;
+          if (y < horizon) {
+            const ty = y / horizon;
+            const distM = Math.hypot((x - mx) * 0.9, y - my);
+            if (distM < 5.5) {
+              col = distM < 3.5 ? orbCore : orbRim;
+            } else {
+              const glow = Math.max(0, 1 - distM / 32) * (bright ? 0.40 : 0.26);
+              col = ditherStep(skyPal, Math.min(1, ty * 0.8 + glow), x, y);
+              if (!isDay && distM > 9 && y < horizon - 8 && hash2d(x, y) > 0.985) {
+                col = Math.sin(t * 2 + x) > 0 ? orbCore : orbRim;
+              }
+            }
+            const hill1 = horizon - 4 - Math.floor(2.8 * Math.sin(x * 0.05) + 1.8 * Math.cos(x * 0.09));
+            const hill2 = horizon - 2 - Math.floor(2.0 * Math.sin(x * 0.08 + 1.4));
+            if (y >= hill2) col = isDay ? [28, 32, 30] : [16, 18, 24];
+            else if (y >= hill1) col = isDay ? [38, 44, 42] : [22, 27, 36];
+          } else {
+            const wy = y - horizon;
+            const wt = wy / (H - horizon);
+            col = ditherStep(waterPal, 1 - wt * 0.7, x, y);
+
+            const rippleAmp = 1 + lakeState.rippleEnergy * 2.8;
+            const dx = Math.abs(x - mx + Math.sin(wy * 0.7 - t * 2.2) * rippleAmp);
+            const spread = (2.2 + wy * 0.55) * (1 + lakeState.rippleEnergy * 0.45);
+            const wave = Math.sin(wy * 1.3 - t * 2.5 + x * 0.4);
+            if (dx < spread && wave > -0.15) {
+              col = (dx < spread * 0.45 && wy % 2 === 0) ? orbCore : orbRim;
+            } else if (lakeState.rippleEnergy > 0.08 && Math.sin(wy * 1.6 - t * 4 + x * 0.25) > 0.75) {
+              col = orbRim;
+            }
+          }
+
+          if (isRain && ((x * 7 + y * 3 + Math.floor(t * 14)) % 47 === 0)) {
+            col = orbRim;
+          }
+
+          const i = (y * W + x) * 4;
+          d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
+        }
+      }
+
+      const reeds = [9, 13, 17, 22, W - 20, W - 15, W - 10];
+      const wind = Math.sin(t * 0.9) * 0.04;
+      reeds.forEach((rx) => {
+        const topY = Math.floor(H * 0.42 + hash2d(rx, 1) * 8);
+        for (let y = topY; y < H; y++) {
+          const lean = Math.floor((H - y) * ((rx < W / 2 ? 0.06 : -0.06) + wind));
+          const px = Math.max(0, Math.min(W - 1, rx + lean));
+          const idx = (y * W + px) * 4;
+          d[idx] = 14; d[idx + 1] = 14; d[idx + 2] = 18; d[idx + 3] = 255;
+        }
+      });
+
+      ctx.putImageData(img, 0, 0);
+    }
+
+    // =========================================================================
+    // 4. DATA, UNDO-STACK & DAG-SPEELBORDEN
+    // =========================================================================
+    const DAYS = ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO'];
+    const DAY_FILE_NAMES = {
+      MA: 'Maandag',
+      DI: 'Dinsdag',
+      WO: 'Woensdag',
+      DO: 'Donderdag',
+      VR: 'Vrijdag',
+      ZA: 'Zaterdag',
+      ZO: 'Zondag'
+    };
+
+    const DEFAULT_NOTES = [
+      {
+        id: 'welkom-1',
+        shortTitle: 'Koppel je kluis via ⚙ bovenin',
+        title: 'Koppel je GitHub-kluis via het ⚙-icoontje rechtsboven',
+        warm: true,
+        dag: 'DI',
+        bron: 'Werkplaats',
+        datum: 'Vandaag',
+        gmail: '',
+        samenvatting: 'Vul eenmalig je GitHub repository en token in bij ⚙ om je echte briefjes uit +/kladblok.md op te halen.',
+        stappen: ['Tik rechtsboven op ⚙', 'Vul je repo en token in en tik op Haal kladblok op'],
+        jouw_zet: 'Tik rechtsboven op ⚙ om je eigen briefjes uit Obsidian te laden.'
+      },
+      {
+        id: 'welkom-2',
+        shortTitle: 'Voorbeeld: Nieuwe gedachte prikken',
+        title: 'Voorbeeld: Spreek iets in bij Uit je hoofd en prik het op dit bord',
+        warm: true,
+        dag: '',
+        bron: 'Voorbeeld',
+        datum: 'Vandaag',
+        gmail: '',
+        samenvatting: 'Alles wat je bij Uit je hoofd inspreekt of typt kun je direct hier op het bord prikken of naar je Boek sturen.',
+        stappen: [],
+        jouw_zet: 'Probeer het lakzegel hieronder uit om dit voorbeeldbriefje af te ronden.'
+      },
+      {
+        id: 'welkom-3',
+        shortTitle: 'Rustig idee voor later',
+        title: 'Voorbeeld: Een los idee in het koelere schaduwhout',
+        warm: false,
+        dag: 'VR',
+        bron: 'Voorbeeld',
+        datum: 'Vandaag',
+        gmail: '',
+        samenvatting: 'Onderin op het bord hangen de briefjes die lekker belangrijk zijn maar geen haast hebben.',
+        stappen: [],
+        jouw_zet: 'Tik op een dagknopje (MA–ZO) om een briefje op een dag-speelbord te leggen.'
+      }
+    ];
+
+    let state = {
+      notes: [],
+      afgerond: [
+        'Welkom in je mobiele Werkplaats'
+      ],
+      dayBoards: { MA: [], DI: [], WO: [], DO: [], VR: [], ZA: [], ZO: [] },
+      undoStack: [], // Houdt je laatste verplaatsing/stempel bij zodat je altijd '↶ Terug' kunt doen!
+      selectedNoteId: null,
+      sealMode: false,
+      celebrationCounter: 0,
+      ghRepo: '',
+      ghToken: '',
+      claudeKey: ''
+    };
+
+    function loadLocalState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('werkplaats_mobiel_v6') || 'null');
+        if (saved && Array.isArray(saved.notes)) {
+          state = Object.assign(state, saved);
+          if (!Array.isArray(state.undoStack)) state.undoStack = [];
+        } else {
+          state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
+        }
+      } catch (_) {
+        state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
+      }
+    }
+
+    function saveLocalState() {
+      localStorage.setItem('werkplaats_mobiel_v6', JSON.stringify(state));
+      updateUndoButton();
+    }
+
+    function pushUndoSnapshot(label) {
+      state.undoStack.push({
+        label,
+        notes: JSON.parse(JSON.stringify(state.notes)),
+        dayBoards: JSON.parse(JSON.stringify(state.dayBoards)),
+        afgerond: JSON.parse(JSON.stringify(state.afgerond))
+      });
+      if (state.undoStack.length > 10) state.undoStack.shift();
+      updateUndoButton();
+    }
+
+    function updateUndoButton() {
+      const btn = document.getElementById('undo-btn');
+      if (!btn) return;
+      btn.classList.toggle('visible', state.undoStack && state.undoStack.length > 0);
+    }
+
+    function undoLastAction() {
+      if (!state.undoStack || state.undoStack.length === 0) return;
+      const snap = state.undoStack.pop();
+      state.notes = snap.notes;
+      state.dayBoards = snap.dayBoards;
+      state.afgerond = snap.afgerond;
+      playNailTap();
+      saveLocalState();
+      renderBoard();
+      showToast(`↶ Teruggezet: ${snap.label}`);
+    }
+
+    // =========================================================================
+    // 5. UI RENDERING (HET BORD MET LOSSE PERKAMENTJES & OPEN BRIEFJE)
+    // =========================================================================
+    function switchTab(tabNum) {
+      playNailTap();
+      document.getElementById('screen-1').classList.toggle('active', tabNum === 1);
+      document.getElementById('screen-2').classList.toggle('active', tabNum === 2);
+      document.getElementById('screen-3').classList.toggle('active', tabNum === 3);
+
+      const t1 = document.getElementById('nav-tab1');
+      const t2 = document.getElementById('nav-tab2');
+
+      if (tabNum === 1) {
+        t1.className = 'wood-token token-oxblood tab-btn';
+        t1.innerHTML = '<span>Uit je hoofd</span>';
+        t1.onclick = () => switchTab(1);
+        t2.className = 'wood-token token-oak tab-btn';
+        t2.innerHTML = '<span>Het Bord</span>';
+      } else if (tabNum === 2) {
+        t1.className = 'wood-token token-oak tab-btn';
+        t1.innerHTML = '<span>Uit je hoofd</span>';
+        t1.onclick = () => switchTab(1);
+        t2.className = 'wood-token token-oxblood tab-btn';
+        t2.innerHTML = '<span>Het Bord</span>';
+        renderBoard();
+      } else if (tabNum === 3) {
+        t1.className = 'wood-token token-oak tab-btn';
+        t1.innerHTML = '<span>&lt; Het Bord</span>';
+        t1.onclick = () => switchTab(2);
+        t2.className = 'wood-token token-oxblood tab-btn';
+        t2.innerHTML = '<span>Briefje</span>';
+      }
+    }
+
+    function renderBoard() {
+      renderBoardWoodWithCarving();
+      updateUndoButton();
+
+      const warmCluster = document.getElementById('warm-notes-cluster');
+      const coolCluster = document.getElementById('cool-notes-cluster');
+      warmCluster.innerHTML = '';
+      coolCluster.innerHTML = '';
+
+      const warmNotes = state.notes.filter((n) => n.warm);
+      const coolNotes = state.notes.filter((n) => !n.warm);
+
+      const makeScrap = (note, idx) => {
+        const div = document.createElement('div');
+        div.className = `parchment-scrap ${note.warm ? 'warm' : 'cool'}`;
+        const canvas = document.createElement('canvas');
+        canvas.className = 'scrap-canvas';
+        drawParchmentScrapCanvas(canvas, note.warm, idx * 17 + (note.id.charCodeAt(0) || 3));
+
+        const shortTxt = note.shortTitle || (note.title.length > 34 ? note.title.slice(0, 32) + '…' : note.title);
+        const dayTag = note.dag ? `<span class="scrap-day-tag">${note.dag}</span>` : '<span></span>';
+        const mailDot = note.gmail ? '<span>✉</span>' : '';
+
+        div.appendChild(canvas);
+        const content = document.createElement('div');
+        content.style.position = 'relative';
+        content.style.zIndex = '2';
+        content.innerHTML = `
+          <div class="scrap-title">${escapeHtml(shortTxt)}</div>
+          <div class="scrap-meta">${dayTag}${mailDot}</div>
+        `;
+        div.appendChild(content);
+
+        div.onclick = () => {
+          if (state.sealMode) {
+            state.selectedNoteId = note.id;
+            stampCurrentNoteDone();
+          } else {
+            openNoteDetail(note.id);
+          }
+        };
+        return div;
+      };
+
+      warmNotes.forEach((n, i) => warmCluster.appendChild(makeScrap(n, i + 1)));
+      coolNotes.forEach((n, i) => coolCluster.appendChild(makeScrap(n, i + 20)));
+
+      // Render de 7 dag-knopjes onderaan het bord
+      const tray = document.getElementById('board-days-tray');
+      tray.innerHTML = '';
+      DAYS.forEach((d) => {
+        // Zowel briefjes die op het bord al voorstel=d hebben ALS briefjes die op dat dagbord staan
+        const dayItems = state.dayBoards[d] || [];
+        const assignedOnBoard = state.notes.filter((n) => n.dag === d);
+        const hasItems = dayItems.length > 0 || assignedOnBoard.length > 0;
+
+        const btn = document.createElement('button');
+        btn.className = `wood-token ${dayItems.length > 0 ? 'token-beige' : 'token-oak'} day-btn`;
+        btn.innerHTML = `<span>${d}</span>${hasItems ? '<span class="day-dot"></span>' : ''}`;
+        btn.onclick = () => openDayModal(d);
+        tray.appendChild(btn);
+      });
+    }
+
+    function openNoteDetail(noteId) {
+      const note = state.notes.find((n) => n.id === noteId);
+      if (!note) return;
+      state.selectedNoteId = noteId;
+
+      document.getElementById('detail-title').textContent = note.title;
+      document.getElementById('detail-jouw-zet').textContent = note.jouw_zet || 'Eerstvolgende kleine stap kiezen.';
+
+      // De DOE-KNOP: als er een mail aan hangt -> "Open mail en reageer", anders "Nu oppakken (focus)"
+      const doeBtn = document.getElementById('detail-doe-btn');
+      const doeLbl = document.getElementById('detail-doe-label');
+      if (note.gmail) {
+        doeLbl.textContent = '✉ Doe nu: Open mail in Gmail';
+      } else {
+        doeLbl.textContent = '▶ Doe nu: Zet vandaag bovenaan';
+      }
+
+      const histBox = document.getElementById('detail-history-box');
+      histBox.style.display = 'none';
+      const bronTxt = note.bron ? `${note.bron} · ${note.datum || ''}` : 'Uit je Kladblok';
+      document.getElementById('detail-history-label').textContent = `+ Voorgeschiedenis (${bronTxt})`;
+
+      const stepsHtml = (note.stappen || []).map((s) => `<li>${escapeHtml(s)}</li>`).join('');
+      histBox.innerHTML = `
+        <div>${escapeHtml(note.samenvatting || note.title)}</div>
+        ${stepsHtml ? `<ul style="margin:6px 0 0 18px;padding:0;">${stepsHtml}</ul>` : ''}
+      `;
+
+      updateWeightLabels(note.warm);
+      renderDetailDaysTray(note.dag);
+      switchTab(3);
+    }
+
+    function triggerDoeAction() {
+      const note = state.notes.find((n) => n.id === state.selectedNoteId);
+      if (!note) return;
+      playNailTap();
+      if (note.gmail) {
+        window.open(note.gmail, '_blank', 'noopener');
+      } else {
+        note.warm = true;
+        // Zet hem helemaal vooraan bij Zeker Belangrijk
+        state.notes = [note, ...state.notes.filter((n) => n.id !== note.id)];
+        saveLocalState();
+        showToast('Bovenaan je bord gezet om nu te doen');
+        switchTab(2);
+      }
+    }
+
+    function updateWeightLabels(isWarm) {
+      const wLbl = document.getElementById('weight-warm-lbl');
+      const cLbl = document.getElementById('weight-cool-lbl');
+      if (isWarm) {
+        wLbl.textContent = '● Zeker belangrijk';
+        wLbl.style.color = '#281C13';
+        wLbl.style.fontWeight = '700';
+        cLbl.textContent = '○ Lekker belangrijk';
+        cLbl.style.color = '#6E5842';
+        cLbl.style.fontWeight = '500';
+      } else {
+        wLbl.textContent = '○ Zeker belangrijk';
+        wLbl.style.color = '#6E5842';
+        wLbl.style.fontWeight = '500';
+        cLbl.textContent = '● Lekker belangrijk';
+        cLbl.style.color = '#281C13';
+        cLbl.style.fontWeight = '700';
+      }
+    }
+
+    function toggleCurrentNoteWeight() {
+      const note = state.notes.find((n) => n.id === state.selectedNoteId);
+      if (!note) return;
+      note.warm = !note.warm;
+      playNailTap();
+      updateWeightLabels(note.warm);
+      saveLocalState();
+      syncToGitHubIfConfigured(`Wissel ${note.title} naar ${note.warm ? 'Warm' : 'Koel'}`);
+      showToast(note.warm ? 'Bij Zeker belangrijk gehangen' : 'Bij Lekker belangrijk gehangen');
+    }
+
+    function toggleHistoryDetails() {
+      const box = document.getElementById('detail-history-box');
+      box.style.display = box.style.display === 'block' ? 'none' : 'block';
+      playNailTap();
+    }
+
+    function renderDetailDaysTray(activeDay) {
+      const tray = document.getElementById('detail-days-tray');
+      tray.innerHTML = '';
+      DAYS.forEach((d) => {
+        const isCurrent = d === activeDay;
+        const btn = document.createElement('button');
+        btn.className = `wood-token ${isCurrent ? 'token-beige' : 'token-oak'} day-btn`;
+        btn.innerHTML = `<span>${d}</span>`;
+        btn.onclick = () => assignCurrentNoteToDay(d);
+        tray.appendChild(btn);
+      });
+    }
+
+    function assignCurrentNoteToDay(dayCode) {
+      const idx = state.notes.findIndex((n) => n.id === state.selectedNoteId);
+      if (idx === -1) return;
+      const note = state.notes[idx];
+
+      pushUndoSnapshot(`"${note.shortTitle || note.title}" op ${DAY_FILE_NAMES[dayCode]}`);
+      playBellChime();
+
+      // Bewaar het volledige briefje-object op de dag (zodat je altijd weet wat het was en hem terug kunt halen!)
+      note.dag = dayCode;
+      if (!state.dayBoards[dayCode]) state.dayBoards[dayCode] = [];
+      state.dayBoards[dayCode].push(JSON.parse(JSON.stringify(note)));
+      state.notes.splice(idx, 1);
+      saveLocalState();
+
+      syncDayCanvasToGitHub(dayCode, note);
+      syncToGitHubIfConfigured(`Naar ${DAY_FILE_NAMES[dayCode]}: ${note.title}`);
+
+      showToast(`🔔 Op ${DAY_FILE_NAMES[dayCode]} gezet (tik '↶ Terug' als je je bedenkt)`);
+      switchTab(2);
+    }
+
+    // =========================================================================
+    // 6. DE 4 WISSELENDE 16-BIT LAKZEGEL-VIERINGEN
+    // =========================================================================
+    function toggleSealMode() {
+      state.sealMode = !state.sealMode;
+      playNailTap();
+      const btn = document.getElementById('seal-mode-btn');
+      btn.classList.toggle('active-mode', state.sealMode);
+      document.getElementById('seal-mode-title').textContent = state.sealMode
+        ? 'Tik op een briefje...'
+        : 'Lakzegel';
+    }
+
+    function stampCurrentNoteDone() {
+      const idx = state.notes.findIndex((n) => n.id === state.selectedNoteId);
+      if (idx === -1) return;
+      const note = state.notes[idx];
+
+      pushUndoSnapshot(`"${note.shortTitle || note.title}" afgestempeld`);
+
+      const variant = state.celebrationCounter % 4;
+      state.celebrationCounter++;
+      playSealCelebrationSound(variant);
+      run16BitCelebration(variant);
+
+      const today = new Date().toISOString().slice(0, 10);
+      state.afgerond.unshift(`${today} — ${note.title}`);
+      state.notes.splice(idx, 1);
+      state.sealMode = false;
+      saveLocalState();
+
+      syncToGitHubIfConfigured(`Afgerond: ${note.title}`, `${today} — ${note.title}`);
+      showToast('Afgerond en opgeborgen in de kist');
+
+      setTimeout(() => {
+        switchTab(2);
+      }, 620);
+    }
+
+    function run16BitCelebration(variant) {
+      const c = document.getElementById('celebration-canvas');
+      const W = 130, H = 276;
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+      let frame = 0;
+      const maxFrames = 36;
+
+      const sparks = Array.from({ length: 30 }, () => ({
+        x: W / 2 + (Math.random() - 0.5) * 24,
+        y: H / 2 + (Math.random() - 0.5) * 24,
+        vx: (Math.random() - 0.5) * 3.2,
+        vy: -Math.random() * 3.0 - 0.5,
+        col: Math.random() > 0.35 ? '#D8C6AA' : '#76362F'
+      }));
+
+      function step() {
+        frame++;
+        ctx.clearRect(0, 0, W, H);
+
+        if (variant === 3) {
+          const alpha = Math.sin((frame / maxFrames) * Math.PI) * 0.3;
+          ctx.fillStyle = `rgba(120, 52, 42, ${alpha})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+
+        const cx = Math.floor(W / 2), cy = Math.floor(H / 2);
+        const radius = Math.min(17, frame * 1.8);
+        for (let py = cy - 19; py <= cy + 23; py++) {
+          for (let px = cx - 19; px <= cx + 19; px++) {
+            const dist = Math.hypot(px - cx, py - cy);
+            const wob = Math.sin(Math.atan2(py - cy, px - cx) * 6) * 1.3;
+            if (dist + wob < radius) {
+              if (dist > radius - 3 && dist < radius - 1.2) {
+                ctx.fillStyle = '#B8A282';
+              } else if (dist < 4 && (px === cx || py === cy)) {
+                ctx.fillStyle = '#D8C6AA';
+              } else {
+                ctx.fillStyle = (px + py < cx + cy) ? '#6B2E27' : '#441B17';
+              }
+              ctx.fillRect(px, py, 1, 1);
+            }
+          }
+        }
+
+        if (variant === 1 && frame > 8) {
+          const dripLen = Math.min(13, (frame - 8) * 0.65);
+          for (let dy = 0; dy < dripLen; dy++) {
+            ctx.fillStyle = '#52221D';
+            ctx.fillRect(cx - 4, cy + 15 + dy, 2, 1);
+            ctx.fillRect(cx + 5, cy + 14 + Math.floor(dy * 0.7), 2, 1);
+          }
+        }
+
+        sparks.forEach((s) => {
+          s.x += s.vx;
+          s.y += s.vy;
+          s.vy += 0.14;
+          ctx.fillStyle = s.col;
+          ctx.fillRect(Math.floor(s.x), Math.floor(s.y), 2, 2);
+        });
+
+        if (frame < maxFrames) {
+          requestAnimationFrame(step);
+        } else {
+          ctx.clearRect(0, 0, W, H);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function deleteCurrentNote() {
+      const idx = state.notes.findIndex((n) => n.id === state.selectedNoteId);
+      if (idx === -1) return;
+      const note = state.notes[idx];
+      pushUndoSnapshot(`"${note.shortTitle || note.title}" weggegooid`);
+      state.notes.splice(idx, 1);
+      playNailTap();
+      saveLocalState();
+      syncToGitHubIfConfigured(`Verwijderd: ${note.title}`);
+      showToast('Weggelegd (tik ↶ Terug om terug te halen)');
+      switchTab(2);
+    }
+
+    // =========================================================================
+    // 7. TAB 1 ACTIES: INSPRAAK, PRIK OP BORD & STUUR NAAR BOEK
+    // =========================================================================
+    const inputEl = document.getElementById('braindump-input');
+    inputEl.addEventListener('input', () => {
+      playQuillScratch();
+      pulseLakeRipple(0.45);
+    });
+
+    let recognition = null;
+    let isListening = false;
+
+    function toggleSpeech() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        inputEl.focus();
+        showToast('Gebruik het microfoontje op je toetsenbord om in te spreken');
+        return;
+      }
+      if (isListening && recognition) {
+        recognition.stop();
+        return;
+      }
+      recognition = new SR();
+      recognition.lang = 'nl-NL';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      const btn = document.getElementById('spreek-btn');
+      const lbl = document.getElementById('spreek-label');
+
+      recognition.onstart = () => {
+        isListening = true;
+        btn.classList.add('listening');
+        lbl.textContent = 'Stop';
+        playNailTap();
+      };
+
+      recognition.onresult = (event) => {
+        pulseLakeRipple(0.95);
+        playQuillScratch();
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          }
+        }
+        if (finalTranscript) {
+          inputEl.value = (inputEl.value ? inputEl.value.trim() + ' ' : '') + finalTranscript.trim();
+        }
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        btn.classList.remove('listening');
+        lbl.textContent = 'Spreek';
+      };
+
+      recognition.start();
+    }
+
+    async function prikOpBord() {
+      const raw = inputEl.value.trim();
+      if (!raw) {
+        inputEl.focus();
+        return;
+      }
+      playNailTap();
+
+      const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+      let title = lines[0].length > 68 ? lines[0].slice(0, 65) + '...' : lines[0];
+      let shortTitle = title.length > 32 ? title.slice(0, 30) + '…' : title;
+      let jouwZet = lines.length > 1 ? lines.slice(1).join(' ') : raw;
+
+      if (state.claudeKey && raw.length > 80) {
+        try {
+          const enriched = await summarizeWithClaude(raw);
+          if (enriched && enriched.title) {
+            title = enriched.title;
+            shortTitle = title.length > 32 ? title.slice(0, 30) + '…' : title;
+            jouwZet = enriched.jouw_zet || jouwZet;
+          }
+        } catch (_) {}
+      }
+
+      const newNote = {
+        id: 'note-' + Date.now(),
+        shortTitle,
+        title,
+        warm: true,
+        dag: '',
+        bron: 'Mobiel',
+        datum: new Date().toISOString().slice(0, 10),
+        gmail: '',
+        samenvatting: raw,
+        stappen: [],
+        jouw_zet: jouwZet
+      };
+
+      state.notes.unshift(newNote);
+      inputEl.value = '';
+      saveLocalState();
+
+      syncToGitHubIfConfigured(`Nieuw briefje: ${title}`);
+      switchTab(2);
+    }
+
+    async function stuurNaarBoek() {
+      const raw = inputEl.value.trim();
+      if (!raw) {
+        inputEl.focus();
+        return;
+      }
+      playBookChord();
+      run16BitCelebration(0);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const firstWords = raw.split(/\s+/).slice(0, 5).join(' ').replace(/[^\w\s-]/g, '').trim() || 'Inworp';
+      const slug = firstWords.toLowerCase().replace(/\s+/g, '-');
+      const filePath = `Projects/Survival Gids/Inworpen/${today}-${slug}.md`;
+      const mdContent = `---\ntype: boek-inworp\ndatum: ${today}\nbron: werkplaats-mobiel\ndoor: gerwald\n---\n\n# ${firstWords}\n\n${raw}\n`;
+
+      inputEl.value = '';
+
+      if (state.ghRepo && state.ghToken) {
+        await putGitHubFile(filePath, mdContent, `Boek-inworp: ${firstWords}`);
+      }
+      showToast(`Naar Survival Gids gestuurd: "${firstWords}"`);
+    }
+
+    // =========================================================================
+    // 8. DAG-MODAL (WAAR JE BRIEFJES VAN DINSDAG KUNT ZIEN, OPENEN OF TERUGHALEN)
+    // =========================================================================
+    function openDayModal(dayCode) {
+      playNailTap();
+      const dayItems = state.dayBoards[dayCode] || [];
+      const boardMatches = state.notes.filter((n) => n.dag === dayCode);
+
+      document.getElementById('day-modal-title').textContent = DAY_FILE_NAMES[dayCode];
+      const list = document.getElementById('day-modal-list');
+      list.innerHTML = '';
+
+      if (dayItems.length === 0 && boardMatches.length === 0) {
+        list.innerHTML = `<div style="color:var(--beige-muted);font-size:12px;padding:8px 0;">Nog niets op ${DAY_FILE_NAMES[dayCode]}.</div>`;
+      } else {
+        // Items die al naar deze dag zijn verplaatst
+        dayItems.forEach((item, idx) => {
+          const isObj = typeof item === 'object' && item !== null;
+          const title = isObj ? item.title : String(item);
+          const row = document.createElement('div');
+          row.className = 'day-modal-item';
+          row.innerHTML = `
+            <div style="font-family:'Merriweather',serif;font-size:12px;font-weight:700;flex:1;">${escapeHtml(title)}</div>
+            <button class="wood-token token-oak" style="padding:4px 8px;font-size:10.5px;flex-shrink:0;">Terug op bord</button>
+          `;
+          row.querySelector('button').onclick = () => {
+            const restored = isObj ? item : {
+              id: 'restored-' + Date.now(),
+              shortTitle: title.slice(0, 30),
+              title,
+              warm: true,
+              dag: dayCode,
+              jouw_zet: title
+            };
+            state.dayBoards[dayCode].splice(idx, 1);
+            state.notes.unshift(restored);
+            playNailTap();
+            saveLocalState();
+            renderBoard();
+            closeDayModal();
+            showToast(`Teruggehangen op het bord`);
+          };
+          list.appendChild(row);
+        });
+
+        // Items die nog op het bord hangen met dit dag-voorstel
+        boardMatches.forEach((note) => {
+          const row = document.createElement('div');
+          row.className = 'day-modal-item';
+          row.innerHTML = `
+            <div style="font-family:'Merriweather',serif;font-size:12px;font-weight:700;flex:1;">${escapeHtml(note.title)}</div>
+            <button class="wood-token token-oxblood" style="padding:4px 8px;font-size:10.5px;flex-shrink:0;">Open</button>
+          `;
+          row.querySelector('button').onclick = () => {
+            closeDayModal();
+            openNoteDetail(note.id);
+          };
+          list.appendChild(row);
+        });
+      }
+      document.getElementById('day-modal').classList.add('open');
+    }
+
+    function closeDayModal() {
+      document.getElementById('day-modal').classList.remove('open');
+    }
+
+    function showAfgerondLog() {
+      playNailTap();
+      document.getElementById('day-modal-title').textContent = 'De Kist (Afgerond)';
+      const list = document.getElementById('day-modal-list');
+      list.innerHTML = '';
+      state.afgerond.forEach((line) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:8px 10px;background:#18110C;border:1px solid #483424;border-radius:4px;font-size:12px;color:#C8B494;';
+        div.textContent = '✓ ' + line;
+        list.appendChild(div);
+      });
+      document.getElementById('day-modal').classList.add('open');
+    }
+
+    // =========================================================================
+    // 9. GITHUB & CLAUDE API SYNCHRONISATIE
+    // =========================================================================
+    function serializeKladblokMarkdown() {
+      const lines = ['# Kladblok', ''];
+      state.notes.forEach((n) => {
+        const meta = {
+          bron: n.bron || 'Werkplaats Mobiel',
+          datum: n.datum || new Date().toISOString().slice(0, 10),
+          gmail: n.gmail || undefined,
+          warm: n.warm,
+          dag: n.dag || undefined,
+          samenvatting: n.samenvatting || n.title,
+          stappen: n.stappen || [],
+          jouw_zet: n.jouw_zet || ''
+        };
+        lines.push(`- ${n.title}`);
+        lines.push(`  <!-- briefje ${JSON.stringify(meta)} -->`);
+      });
+      return lines.join('\n') + '\n';
+    }
+
+    async function putGitHubFile(path, contentText, commitMsg) {
+      if (!state.ghRepo || !state.ghToken) return false;
+      const apiUrl = `https://api.github.com/repos/${state.ghRepo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`;
+      const headers = {
+        Authorization: `Bearer ${state.ghToken}`,
+        Accept: 'application/vnd.github+json'
+      };
+      let sha = undefined;
+      try {
+        const getRes = await fetch(apiUrl, { headers });
+        if (getRes.ok) {
+          const existing = await getRes.json();
+          sha = existing.sha;
+        }
+      } catch (_) {}
+
+      const body = {
+        message: commitMsg,
+        content: btoa(unescape(encodeURIComponent(contentText)))
+      };
+      if (sha) body.sha = sha;
+
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+        body: JSON.stringify(body)
+      });
+      return putRes.ok;
+    }
+
+    async function syncToGitHubIfConfigured(commitMsg, afgerondLine = null) {
+      if (!state.ghRepo || !state.ghToken) return;
+      try {
+        await putGitHubFile('+/kladblok.md', serializeKladblokMarkdown(), commitMsg);
+        if (afgerondLine) {
+          const afgContent = `# Afgerond\n\n` + state.afgerond.map((l) => `- ${l}`).join('\n') + '\n';
+          await putGitHubFile('+/afgerond.md', afgContent, commitMsg);
+        }
+      } catch (_) {}
+    }
+
+    async function syncDayCanvasToGitHub(dayCode, note) {
+      if (!state.ghRepo || !state.ghToken) return;
+      const path = `Calendar/dagen/${DAY_FILE_NAMES[dayCode]}.canvas`;
+      const apiUrl = `https://api.github.com/repos/${state.ghRepo}/contents/${path}`;
+      const headers = {
+        Authorization: `Bearer ${state.ghToken}`,
+        Accept: 'application/vnd.github+json'
+      };
+      try {
+        let canvasObj = { nodes: [], edges: [] };
+        const res = await fetch(apiUrl, { headers });
+        if (res.ok) {
+          const fileData = await res.json();
+          const decoded = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
+          canvasObj = JSON.parse(decoded);
+        }
+        const maxY = (canvasObj.nodes || []).reduce((m, n) => Math.max(m, (n.y || 0) + (n.height || 80)), 0);
+        canvasObj.nodes = canvasObj.nodes || [];
+        canvasObj.nodes.push({
+          id: 'mob-' + Date.now().toString(16),
+          type: 'text',
+          text: `**${note.title}**\n${note.jouw_zet || ''}`.trim(),
+          x: 60,
+          y: maxY + 40,
+          width: 240,
+          height: 90,
+          color: note.warm ? '2' : '5'
+        });
+        await putGitHubFile(path, JSON.stringify(canvasObj, null, 2), `Mobiel -> ${DAY_FILE_NAMES[dayCode]}: ${note.title}`);
+      } catch (_) {}
+    }
+
+    async function pullFromGitHub() {
+      state.ghRepo = document.getElementById('cfg-gh-repo').value.trim();
+      state.ghToken = document.getElementById('cfg-gh-token').value.trim();
+      if (!state.ghRepo || !state.ghToken) {
+        showToast('Vul eerst je GitHub repo en token in');
+        return;
+      }
+      saveLocalState();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${state.ghRepo}/contents/+%2Fkladblok.md`, {
+          headers: { Authorization: `Bearer ${state.ghToken}`, Accept: 'application/vnd.github+json' }
+        });
+        if (!res.ok) throw new Error('Niet gevonden');
+        const data = await res.json();
+        const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+        parseKladblokMarkdown(text);
+        saveLocalState();
+        renderBoard();
+        closeSettingsModal();
+        showToast('Kladblok opgehaald van GitHub');
+      } catch (e) {
+        showToast('Kon niet ophalen: controleer repo en token');
+      }
+    }
+
+    function parseKladblokMarkdown(md) {
+      const lines = md.split('\n');
+      const parsed = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('- ')) {
+          const title = line.slice(2).trim();
+          let meta = {};
+          if (i + 1 < lines.length && lines[i + 1].includes('<!-- briefje')) {
+            const m = lines[i + 1].match(/<!--\s*briefje\s+(\{.*\})\s*-->/);
+            if (m) {
+              try { meta = JSON.parse(m[1]); } catch (_) {}
+            }
+            i++;
+          }
+          parsed.push({
+            id: 'kb-' + i + '-' + Date.now(),
+            shortTitle: title.length > 32 ? title.slice(0, 30) + '…' : title,
+            title,
+            warm: meta.warm !== undefined ? Boolean(meta.warm) : true,
+            dag: meta.dag || '',
+            bron: meta.bron || 'Kladblok',
+            datum: meta.datum || '',
+            gmail: meta.gmail || '',
+            samenvatting: meta.samenvatting || title,
+            stappen: meta.stappen || [],
+            jouw_zet: meta.jouw_zet || ''
+          });
+        }
+      }
+      if (parsed.length > 0) state.notes = parsed;
+    }
+
+    async function summarizeWithClaude(rawText) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': state.claudeKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-haiku-latest',
+          max_tokens: 220,
+          system: 'Je bent Gerwalds korte briefjes-assistent. Vat een ingesproken notitie samen als JSON met exact twee velden: {"title": "korte titel max 7 woorden", "jouw_zet": "één concrete volgende actie in 1 zin"}. Alleen JSON teruggeven.',
+          messages: [{ role: 'user', content: rawText }]
+        })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const txt = data.content?.[0]?.text || '';
+      const m = txt.match(/\{[\s\S]*\}/);
+      return m ? JSON.parse(m[0]) : null;
+    }
+
+    function openSettingsModal() {
+      playNailTap();
+      document.getElementById('cfg-gh-repo').value = state.ghRepo || '';
+      document.getElementById('cfg-gh-token').value = state.ghToken || '';
+      document.getElementById('cfg-claude-key').value = state.claudeKey || '';
+      document.getElementById('settings-modal').classList.add('open');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('open');
+    }
+
+    function saveSettings() {
+      state.ghRepo = document.getElementById('cfg-gh-repo').value.trim();
+      state.ghToken = document.getElementById('cfg-gh-token').value.trim();
+      state.claudeKey = document.getElementById('cfg-claude-key').value.trim();
+      saveLocalState();
+      closeSettingsModal();
+      playBellChime();
+      showToast('Bewaard');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // OPSTARTEN
+    loadLocalState();
+    renderWoodBackground();
+    renderQuillAndStamps();
+    renderBoard();
+    fetchAlkmaarWeather();
+    setInterval(drawLakeFrame, 55);
+  </script>
+</body>
+</html>

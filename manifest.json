@@ -1,0 +1,10 @@
+{
+  "name": "AI-Werkplaats Mobiel",
+  "short_name": "Werkplaats",
+  "description": "16-bit Skeuomorfe Schrijfkamer & Questbord voor Android (gekoppeld aan Obsidian)",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1C140F",
+  "theme_color": "#1C140F",
+  "orientation": "portrait"
+}
