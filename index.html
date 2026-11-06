@@ -1437,71 +1437,51 @@
       src.start();
     }
 
-    function playBellChime() {
+    // Subtiel, natuurlijk vleugel-geruis (geen synth 'bloem-bloem' deuntjes!)
+    function playWingFlutter(kind = 'dove') {
       if (!state.uiSoundOn) return;
       const ctx = getAudio();
       if (!ctx) return;
-      const now = ctx.currentTime;
-      [587.33, 880, 1174.66].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + i * 0.055);
-        gain.gain.setValueAtTime(0.08, now + i * 0.055);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.38);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + i * 0.055);
-        osc.stop(now + i * 0.055 + 0.4);
+      const isRaven = kind === 'raven';
+      const beats = isRaven ? [0, 0.14, 0.29] : [0, 0.085, 0.17, 0.255];
+
+      beats.forEach((delay, idx) => {
+        setTimeout(() => {
+          if (!state.uiSoundOn) return;
+          const dur = isRaven ? 0.075 : 0.045;
+          const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < data.length; i++) {
+            const env = Math.sin((i / data.length) * Math.PI) * (1 - idx * 0.18);
+            data[i] = (Math.random() * 2 - 1) * env * (isRaven ? 0.085 : 0.065);
+          }
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          // Raaf: diepere, tragere wiekslag; Duif: lichter, luchtiger gefladder
+          filter.frequency.value = isRaven ? (420 - idx * 35) : (1150 + idx * 80);
+          filter.Q.value = isRaven ? 1.6 : 2.1;
+          src.connect(filter);
+          filter.connect(ctx.destination);
+          src.start();
+        }, delay * 1000);
       });
     }
 
+    function playBellChime() {
+      playWoodTouch('paper');
+    }
+
     function playBookChord() {
-      if (!state.uiSoundOn) return;
-      const ctx = getAudio();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      [293.66, 369.99, 440.0, 587.33].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + i * 0.07);
-        gain.gain.setValueAtTime(0.09, now + i * 0.07);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.6);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + i * 0.07);
-        osc.stop(now + i * 0.07 + 0.65);
-      });
+      playWingFlutter('dove');
     }
 
     function playSealCelebrationSound(variant) {
       if (!state.uiSoundOn) return;
-      const ctx = getAudio();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      playWoodTouch('paper');
-
-      const chords = [
-        [330, 415.3, 493.88, 659.25],
-        [261.63, 329.63, 392.0, 523.25],
-        [293.66, 440.0, 554.37, 587.33],
-        [220.0, 329.63, 440.0]
-      ];
-      const notes = chords[variant % chords.length];
-      notes.forEach((f, idx) => {
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = variant === 3 ? 'sine' : 'triangle';
-        const t0 = now + 0.08 + idx * 0.065;
-        osc.frequency.setValueAtTime(f, t0);
-        g.gain.setValueAtTime(0.09, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
-        osc.connect(g);
-        g.connect(ctx.destination);
-        osc.start(t0);
-        osc.stop(t0 + 0.55);
-      });
+      // Fysieke lakstempel-doffe druk op perkament (geen synth-riedeltje)
+      playWoodTouch('wood');
+      setTimeout(() => playWoodTouch('paper'), 75);
     }
 
     // =========================================================================
@@ -1921,21 +1901,15 @@
         if (st.life <= 0) lakeState.shootingStar = null;
       }
 
-      // Grote 16-bit Postduif ('dove' bij Naar boek) of Raaf ('raven' bij Prik op bord) in het raampje
+      // 16-bit Witte Postduif ('dove' bij Naar boek) of Zwarte Raaf ('raven' bij Prik op bord) in het raampje
       if (lakeState.bird) {
         const b = lakeState.bird;
         b.x += b.vx;
-        b.y += b.vy + Math.sin(b.frame * 0.25) * 0.12;
+        b.y += b.vy + Math.sin(b.frame * 0.25) * 0.1;
         b.frame++;
         const bx = Math.round(b.x), by = Math.round(b.y);
-        const flap = Math.floor(b.frame / 3) % 4; // 4 vleugelslag-fases
+        const flap = Math.floor(b.frame / 3) % 4;
         const isRaven = b.kind === 'raven';
-
-        const bodyCol  = isRaven ? [20, 24, 34]   : [238, 228, 210];
-        const shadeCol = isRaven ? [38, 46, 66]   : [196, 182, 158];
-        const beakCol  = isRaven ? [92, 98, 112]  : [228, 168, 72];
-        const scrollCol = [216, 196, 160];
-        const sealCol   = isRaven ? [204, 156, 68] : [136, 42, 34];
 
         const putBirdPx = (dx, dy, rgb) => {
           const px = bx + dx, py = by + dy;
@@ -1945,30 +1919,62 @@
           }
         };
 
-        // Staartveren & romp (duidelijk groter, 18x12 pixels in het raam!)
-        [[-7,1],[-6,1],[-6,0],[-5,0],[-4,0],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],
-         [-4,1],[-3,1],[-2,1],[-1,1],[0,1],[1,1],[2,-1],[3,-1],[4,-1]].forEach(([dx, dy]) => putBirdPx(dx, dy, bodyCol));
-        [[-8,2],[-7,2],[-5,1],[3,0]].forEach(([dx, dy]) => putBirdPx(dx, dy, shadeCol));
+        if (isRaven) {
+          // ECHTE 16-BIT RAAF: diepzwart verenpak met maanlicht-zilveren contour (zodat hij 's nachts scherp afsteekt!),
+          // lange gekromde ravensnavel, amber oog, wig-staart en gespreide vinger-slagpennen
+          const rBlack = [12, 14, 20];
+          const rSheen = [36, 46, 68];
+          const rRim   = [126, 146, 180]; // Maanlicht-randje voor contrast tegen donkere lucht
+          const rBeak  = [148, 156, 172];
+          const rEye   = [236, 168, 50];
 
-        // Kop, oog & snavel
-        putBirdPx(3, -2, bodyCol);
-        putBirdPx(4, -2, [16, 12, 10]); // Oogje
-        putBirdPx(5, -1, beakCol);
-        putBirdPx(6, -1, beakCol);
+          // Wigvormige ravenstaart & slanke romp
+          [[-7,1],[-6,1],[-5,1],[-4,1],[-3,1],[-2,1],[-1,1],[0,1],[1,1],
+           [-5,0],[-4,0],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0]].forEach(([dx, dy]) => putBirdPx(dx, dy, rBlack));
+          // Maanlicht-contour bovenlangs staart & rug
+          [[-8,1],[-7,0],[-6,0],[-5,-1],[-4,-1],[2,-1]].forEach(([dx, dy]) => putBirdPx(dx, dy, rRim));
+          // Vooruitgestoken ravenkop + amber oog + lange gekromde snavel
+          putBirdPx(3, -1, rBlack); putBirdPx(3, -2, rRim);
+          putBirdPx(4, -1, rEye);
+          putBirdPx(5, -1, rBeak); putBirdPx(6, -1, rBeak); putBirdPx(7, 0, rBeak); // Gekromde snavelpunt!
 
-        // Vleugelslag (4 frames: hoog, midden, diep omlaag, zweef)
-        const wingCoords = flap === 0
-          ? [[-3,-1],[-2,-2],[-1,-3],[0,-4],[1,-5],[-2,-3],[-1,-4],[0,-5],[-4,-2],[-3,-3],[-2,-4]]
-          : flap === 1
-          ? [[-4,-1],[-3,-2],[-2,-2],[-1,-2],[0,-2],[1,-1],[-5,-2],[-4,-2],[-3,-3]]
-          : flap === 2
-          ? [[-2,1],[-1,2],[0,3],[1,4],[-3,2],[-2,3],[-1,4],[0,4]]
-          : [[-4,0],[-3,-1],[-2,-1],[-1,-1],[0,-1],[1,-1]];
-        wingCoords.forEach(([dx, dy], i) => putBirdPx(dx, dy, i % 3 === 0 ? shadeCol : bodyCol));
+          // Brede raven-vleugels met losse vinger-slagpennen aan de top
+          const rWings = flap === 0
+            ? [[-3,-1],[-2,-2],[-1,-3],[0,-4],[-2,-3],[-1,-4],[0,-5],[-4,-4],[-2,-6],[0,-6]] // Gespreide vingers boven!
+            : flap === 1
+            ? [[-4,-1],[-3,-2],[-2,-2],[-1,-2],[0,-2],[-6,-2],[-5,-3],[-3,-3]]
+            : flap === 2
+            ? [[-2,1],[-1,2],[0,3],[-3,2],[-2,3],[-1,4],[-4,4],[-2,5]]
+            : [[-4,0],[-3,-1],[-2,-1],[-1,-1],[0,-1]];
+          rWings.forEach(([dx, dy], i) => putBirdPx(dx, dy, i >= rWings.length - 3 ? rRim : (i % 2 === 0 ? rBlack : rSheen)));
 
-        // Perkament-rolletje + zegel/speld onder de klauwtjes
-        [[-1,2],[0,2],[1,2]].forEach(([dx, dy]) => putBirdPx(dx, dy, scrollCol));
-        putBirdPx(0, 3, sealCol);
+          // Klein briefrolletje + gouden speld in de klauwtjes
+          putBirdPx(-1, 2, [216, 196, 160]); putBirdPx(0, 2, [216, 196, 160]);
+          putBirdPx(0, 3, [212, 164, 70]);
+        } else {
+          // ECHTE 16-BIT WITTE POSTDUIF: sierlijk parelwit duifje met ronde kop, fijn snaveltje & rode lakzegel
+          const dWhite = [242, 234, 218];
+          const dShade = [198, 184, 162];
+          const dBeak  = [228, 168, 72];
+
+          [[-5,1],[-4,1],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[-2,1],[-1,1],[0,1],[1,1]].forEach(([dx, dy]) => putBirdPx(dx, dy, dWhite));
+          [[-6,1],[-5,0],[-3,1]].forEach(([dx, dy]) => putBirdPx(dx, dy, dShade));
+          putBirdPx(2, -1, dWhite); putBirdPx(2, -2, dWhite);
+          putBirdPx(3, -1, dBeak); // Fijn duivensnaveltje
+
+          const dWings = flap === 0
+            ? [[-2,-1],[-1,-2],[0,-3],[-3,-2],[-2,-3],[-1,-4]]
+            : flap === 1
+            ? [[-3,-1],[-2,-2],[-1,-2],[0,-1]]
+            : flap === 2
+            ? [[-1,1],[0,2],[-2,2],[-1,3]]
+            : [[-3,0],[-2,-1],[-1,-1]];
+          dWings.forEach(([dx, dy], i) => putBirdPx(dx, dy, i % 2 === 0 ? dWhite : dShade));
+
+          // Briefje met rode lakzegel
+          putBirdPx(0, 2, [220, 202, 170]);
+          putBirdPx(0, 3, [148, 38, 30]);
+        }
 
         if (b.x > W + 14 || b.y < -8) lakeState.bird = null;
       }
@@ -2658,198 +2664,68 @@
     }
 
     /**
-     * Grote 16-bit Vogel-vlucht over het scherm (op #celebration-canvas):
-     * - kind === 'raven': Grote 16-bit Raaf met briefrolletje + messing speld (bij 'Prik op bord')
-     * - kind === 'dove' : Grote 16-bit Witte Postduif met perkamentrol + rode lakzegel (bij 'Naar boek')
+     * Subtiele, niet-intrusive 16-bit Raaf bovenlangs op het hout van Het Bord (#board-wood-canvas):
+     * Vliegt niet midden over je tekst/knoppen heen, maar scheert rustig bovenlangs over de
+     * bovenste houten plank van Het Bord terwijl je nieuwe briefje wordt opgeprikt!
      */
-    function runBig16BitBirdFlight(kind = 'dove') {
-      const c = document.getElementById('celebration-canvas');
+    function runBoardRavenDelivery() {
+      const c = document.getElementById('board-wood-canvas');
       if (!c) return;
-      const W = 136, H = 260;
-      c.width = W;
-      c.height = H;
-      const ctx = c.getContext('2d');
-
-      const isRaven = kind === 'raven';
       let frame = 0;
-      const maxFrames = 42;
-      const feathers = [];
-
-      // 28x20 16-bit pixel-art vogel-renderer met 4 vleugelslag-fases
-      function drawBigBirdSprite(cx, cy, flapPhase) {
-        const C = isRaven
-          ? {
-              out:   '#0B0D13', // Diepzwart contour
-              body:  '#171B26', // Obsidiaan-zwart verenpak
-              mid:   '#252C3E', // Middernacht-blauw glans
-              hi:    '#3B4662', // Staalblauwe vleugel-highlight
-              beak:  '#586070', //Zware gekromde ravensnavel
-              beakD: '#383E4A',
-              eye:   '#ECA832', // Amberkleurig raven-oog
-              legs:  '#423B36',
-              scrl:  '#D8C49E', // Perkamentrolletje
-              scrlD: '#9E8660',
-              seal:  '#D4A446'  // Messing prikbord-speld
-            }
-          : {
-              out:   '#3E3227', // Warme donkerbruine 16-bit contour
-              body:  '#EFE6D5', // Parelwit / ivoor verenpak
-              mid:   '#D8C8AE', // Zachte perkament-schaduw
-              hi:    '#FAF5EC', // Helderwit vleugel-licht
-              beak:  '#E2A444', // Gouden duivensnavel
-              beakD: '#B07828',
-              eye:   '#1C1410', // Donker duivenoog
-              legs:  '#C86452', // Koraalrode pootjes
-              scrl:  '#DECAA4', // Perkamentrolletje
-              scrlD: '#A68E68',
-              seal:  '#8E2820'  // Rode ossenbloed lakzegel
-            };
-
-        const px = (dx, dy, col) => {
-          ctx.fillStyle = col;
-          ctx.fillRect(Math.round(cx + dx), Math.round(cy + dy), 1, 1);
-        };
-
-        // 1. Gespreide staartveren linksachter (-13..-7)
-        const tailRows = [
-          [-13, 2, C.out], [-12, 2, C.mid], [-11, 2, C.body],
-          [-14, 1, C.out], [-13, 1, C.hi],  [-12, 1, C.body], [-11, 1, C.body], [-10, 1, C.body],
-          [-13, 0, C.out], [-12, 0, C.mid], [-11, 0, C.body], [-10, 0, C.body], [-9, 0, C.body],
-          [-12, 3, C.out], [-11, 3, C.mid], [-10, 3, C.body], [-9, 2, C.body], [-8, 2, C.body]
-        ];
-        tailRows.forEach(([x, y, col]) => px(x, y, col));
-
-        // 2. Romp & borst (-8..+6)
-        for (let y = -2; y <= 3; y++) {
-          const xStart = y === -2 ? -5 : (y === 3 ? -6 : -8);
-          const xEnd   = y === -2 ?  5 : (y === 3 ?  3 :  6);
-          for (let x = xStart; x <= xEnd; x++) {
-            const isEdge = (y === 3 || x === xStart);
-            const isTop  = (y === -2);
-            px(x, y, isEdge ? C.mid : (isTop ? C.hi : C.body));
-          }
-        }
-        // Romp-contour onderlangs
-        for (let x = -7; x <= 4; x++) px(x, 4, C.out);
-
-        // 3. Kop, nek & snavel (+5..+13)
-        for (let y = -5; y <= -1; y++) {
-          for (let x = 4; x <= 8; x++) {
-            if (y === -5 && (x === 4 || x === 8)) continue;
-            px(x, y, y === -5 ? C.hi : C.body);
-          }
-        }
-        px(6, -6, C.out); px(7, -6, C.out);
-        px(7, -4, C.eye); // Oog
-
-        // Snavel (Raaf heeft een langere, zwaardere gekromde snavel; Duif een fijne snavel)
-        if (isRaven) {
-          px(9, -4, C.beak); px(10, -4, C.beak); px(11, -4, C.beak);
-          px(9, -3, C.beakD); px(10, -3, C.beak); px(11, -3, C.beak); px(12, -3, C.beakD);
-          px(12, -2, C.out); // Gekromde raven-punt
-        } else {
-          px(9, -3, C.beak); px(10, -3, C.beak);
-          px(9, -2, C.beakD); px(10, -2, C.beakD);
-        }
-
-        // 4. Vleugelslag met losse slagpennen (4 gedetailleerde 16-bit frames)
-        if (flapPhase === 0) {
-          // Hoog opgeslagen vleugel met gespreide slagpennen
-          for (let wy = -3; wy >= -12; wy--) {
-            const progress = (-3 - wy);
-            const wx0 = -5 - Math.floor(progress * 0.45);
-            const wx1 =  3 - Math.floor(progress * 0.25);
-            for (let wx = wx0; wx <= wx1; wx++) {
-              const col = (wx === wx1 || wy === -12) ? C.hi : (wx === wx0 ? C.out : (wy < -8 ? C.mid : C.body));
-              px(wx, wy, col);
-            }
-          }
-          // Losse slagpen-punten bovenaan
-          px(-9, -13, C.hi); px(-7, -14, C.hi); px(-5, -14, C.hi); px(-3, -13, C.mid);
-        } else if (flapPhase === 1) {
-          // Wijde zweef-/midden-slag
-          for (let wy = -2; wy >= -7; wy--) {
-            const wx0 = -9 + (wy + 2);
-            const wx1 =  3;
-            for (let wx = wx0; wx <= wx1; wx++) {
-              px(wx, wy, wy === -7 ? C.hi : (wx === wx0 ? C.out : C.mid));
-            }
-          }
-          px(-11, -6, C.hi); px(-10, -7, C.hi); px(-8, -8, C.hi);
-        } else if (flapPhase === 2) {
-          // Diepe neerslag (vleugel krachtig omlaag)
-          for (let wy = 0; wy <= 9; wy++) {
-            const wx0 = -4 - Math.floor(wy * 0.4);
-            const wx1 =  3 - Math.floor(wy * 0.2);
-            for (let wx = wx0; wx <= wx1; wx++) {
-              px(wx, wy, wx === wx1 ? C.hi : (wy > 6 ? C.mid : C.body));
-            }
-          }
-          px(-8, 9, C.hi); px(-6, 10, C.hi); px(-4, 10, C.mid);
-        } else {
-          // Herstel-slag schuin omhoog
-          for (let wy = -1; wy >= -9; wy--) {
-            const wx0 = -6 - Math.floor((-1 - wy) * 0.3);
-            const wx1 =  2;
-            for (let wx = wx0; wx <= wx1; wx++) {
-              px(wx, wy, wx === wx1 ? C.hi : C.body);
-            }
-          }
-        }
-
-        // 5. Pootjes + Opgerold Perkament-briefje met Lakzegel / Speld onder de vogel!
-        px(-1, 5, C.legs); px(1, 5, C.legs);
-        for (let sx = -4; sx <= 4; sx++) {
-          px(sx, 6, C.scrl);
-          px(sx, 7, sx % 3 === 0 ? C.scrlD : C.scrl);
-          px(sx, 8, C.scrlD);
-        }
-        // Lakzegel (duif) of Messing Speld (raaf) midden op de rol
-        px(0, 6, C.seal); px(-1, 7, C.seal); px(0, 7, C.seal); px(1, 7, C.seal); px(0, 8, C.seal);
-      }
+      const maxFrames = 38;
 
       function step() {
         frame++;
-        ctx.clearRect(0, 0, W, H);
-
+        renderBoardWoodWithCarving();
+        const ctx = c.getContext('2d');
+        const W = c.width;
         const p = frame / maxFrames;
-        // Vliegt vanuit de perkamentrol (midden-onder) in een sierlijke boog omhoog over het scherm
-        const bx = isRaven
-          ? 24 + p * (W - 34)
-          : 20 + p * (W - 28);
-        const by = isRaven
-          ? 185 - Math.sin(p * Math.PI * 0.85) * 118 - p * 35
-          : 192 - p * 158 - Math.sin(p * Math.PI) * 22;
+        const bx = Math.round(-12 + p * (W + 28));
+        const by = Math.round(13 + Math.sin(p * Math.PI * 2) * 2.5);
+        const flap = Math.floor(frame / 3) % 4;
 
-        if (frame % 5 === 1) {
-          feathers.push({
-            x: bx - 8,
-            y: by + 2,
-            vx: -0.4 - Math.random() * 0.4,
-            vy: 0.35 + Math.random() * 0.4,
-            life: 16,
-            col: isRaven ? '#252C3E' : '#EFE6D5'
-          });
+        const px = (dx, dy, col) => {
+          ctx.fillStyle = col;
+          ctx.fillRect(bx + dx, by + dy, 1, 1);
+        };
+
+        // 16-bit Zwarte Raaf met zilver-blauwe maanlicht-rand, zware gekromde snavel & vinger-slagpennen
+        const rBlack = '#0C0E14';
+        const rSheen = '#242E44';
+        const rRim   = '#8A9EC0';
+        const rBeak  = '#9AA4B8';
+        const rEye   = '#ECA832';
+
+        // Wigvormige ravenstaart & romp
+        [[-7,1],[-6,1],[-5,1],[-4,1],[-3,1],[-2,1],[-1,1],[0,1],[1,1],
+         [-5,0],[-4,0],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0]].forEach(([dx, dy]) => px(dx, dy, rBlack));
+        [[-8,1],[-7,0],[-6,0],[-5,-1],[-4,-1],[2,-1]].forEach(([dx, dy]) => px(dx, dy, rRim));
+
+        // Kop, amber oog & gekromde ravensnavel
+        px(3, -1, rBlack); px(3, -2, rRim);
+        px(4, -1, rEye);
+        px(5, -1, rBeak); px(6, -1, rBeak); px(7, 0, rBeak);
+
+        // Vleugels met losse vinger-slagpennen
+        const rWings = flap === 0
+          ? [[-3,-1],[-2,-2],[-1,-3],[0,-4],[-2,-3],[-1,-4],[0,-5],[-4,-4],[-2,-6],[0,-6]]
+          : flap === 1
+          ? [[-4,-1],[-3,-2],[-2,-2],[-1,-2],[0,-2],[-6,-2],[-5,-3],[-3,-3]]
+          : flap === 2
+          ? [[-2,1],[-1,2],[0,3],[-3,2],[-2,3],[-1,4],[-4,4],[-2,5]]
+          : [[-4,0],[-3,-1],[-2,-1],[-1,-1],[0,-1]];
+        rWings.forEach(([dx, dy], i) => px(dx, dy, i >= rWings.length - 3 ? rRim : (i % 2 === 0 ? rBlack : rSheen)));
+
+        // Tot halverwege het bord draagt de raaf nog het briefrolletje + gouden speld
+        if (p < 0.48) {
+          px(-1, 2, '#D8C49E'); px(0, 2, '#D8C49E');
+          px(0, 3, '#D4A446');
         }
-
-        // Dwarrelende veertjes achter de vogel
-        for (let i = feathers.length - 1; i >= 0; i--) {
-          const f = feathers[i];
-          f.x += f.vx + Math.sin(frame * 0.3 + i) * 0.25;
-          f.y += f.vy;
-          f.life--;
-          ctx.fillStyle = f.col;
-          ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 1);
-          if (f.life <= 0) feathers.splice(i, 1);
-        }
-
-        const flapPhase = Math.floor(frame / 3) % 4;
-        drawBigBirdSprite(bx, by, flapPhase);
 
         if (frame < maxFrames) {
           requestAnimationFrame(step);
         } else {
-          ctx.clearRect(0, 0, W, H);
+          renderBoardWoodWithCarving();
         }
       }
       requestAnimationFrame(step);
@@ -3236,13 +3112,12 @@
       document.getElementById('scroll-undo-btn').classList.remove('visible');
       saveLocalState();
 
-      // Laat de grote 16-bit Raaf met het briefrolletje naar het Prikbord vliegen!
+      // Subtiele 16-bit Raaf: vliegt door het raampje én scheert niet-intrusive bovenlangs over het hout van Het Bord!
+      playWingFlutter('raven');
       launchMessengerBird('raven');
-      runBig16BitBirdFlight('raven');
-      showToast(`🪶 Raaf vliegt je briefje naar het Prikbord`);
-
       syncToGitHubIfConfigured(`Nieuw briefje: ${title}`);
-      setTimeout(() => switchTab(2), 420);
+      switchTab(2);
+      runBoardRavenDelivery();
     }
 
     async function stuurNaarBoek() {
@@ -3252,10 +3127,9 @@
         return;
       }
       if (wantListening) toggleSpeech();
-      playBookChord();
-      // Laat de grote 16-bit Witte Postduif met lakzegel-rol naar het Boek vliegen!
+      playWingFlutter('dove');
+      // Subtiele 16-bit Witte Postduif: vliegt alleen buiten in het raampje over het meer weg!
       launchMessengerBird('dove');
-      runBig16BitBirdFlight('dove');
 
       const today = new Date().toISOString().slice(0, 10);
       const firstWords = raw.split(/\s+/).slice(0, 5).join(' ').replace(/[^\w\s-]/g, '').trim() || 'Inworp';
