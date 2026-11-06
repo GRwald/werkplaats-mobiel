@@ -235,10 +235,27 @@
 
     .top-bar {
       display: grid;
-      grid-template-columns: 1fr 1fr auto;
+      grid-template-columns: 1fr 1fr auto auto;
       gap: 6px;
       align-items: stretch;
       flex-shrink: 0;
+    }
+
+    .app-install-pill {
+      height: 38px;
+      padding: 0 9px;
+      font-family: 'Merriweather', serif;
+      font-size: 10.5px;
+      font-weight: 700;
+      flex-direction: row;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    @media (display-mode: standalone) {
+      .app-install-pill {
+        display: none !important;
+      }
     }
 
     .tab-btn {
@@ -742,13 +759,24 @@
     }
 
     /* ==========================================================================
-       SCHERM 3: OPEN BRIEFJE
+       SCHERM 3: OPEN BRIEFJE (MET 16-BIT VERBRANDINGS-LAAG)
        ========================================================================== */
     .open-card-scroll {
       flex: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+
+    #burn-overlay-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      pointer-events: none;
+      z-index: 25;
     }
 
     .open-card-body {
@@ -980,13 +1008,16 @@
     <canvas id="celebration-canvas"></canvas>
 
     <div class="app-layer">
-      <!-- BOVENSTE TAB-BALK -->
+      <!-- BOVENSTE TAB-BALK (INCL. DIRECTE '📲 APP'-KNOP VOOR JE STARTSCHERM) -->
       <div class="wood-slot top-bar">
         <button id="nav-tab1" class="wood-token token-oxblood tab-btn" onclick="switchTab(1)">
           <span>Uit je hoofd</span>
         </button>
         <button id="nav-tab2" class="wood-token token-oak tab-btn" onclick="switchTab(2)">
           <span>Het Bord</span>
+        </button>
+        <button id="top-install-btn" class="wood-token token-beige app-install-pill" title="Zet als vaste App op je telefoon" onclick="installStandaloneApp()">
+          <span>📲 App</span>
         </button>
         <button class="wood-token token-oak icon-btn" title="Instellingen" onclick="openSettingsModal()">
           ⚙
@@ -1071,9 +1102,10 @@
              SCHERM 3: OPEN BRIEFJE
              ================================================================== -->
         <div id="screen-3" class="screen">
-          <div class="scroll-assembly open-card-scroll">
+          <div id="open-card-scroll" class="scroll-assembly open-card-scroll">
+            <canvas id="burn-overlay-canvas"></canvas>
             <div class="scroll-roller"></div>
-            <div class="open-card-body">
+            <div id="open-card-body" class="open-card-body">
               <div class="top-nail"></div>
               <h2 id="detail-title"></h2>
 
@@ -1188,6 +1220,36 @@
       </div>
     </div>
 
+    <!-- MODAL 3: VASTE APP OP JE TELEFOON -->
+    <div id="install-modal" class="modal-backdrop" onclick="if(event.target===this)closeInstallModal()">
+      <div class="modal-box">
+        <div class="modal-title">
+          <span>📲 Als vaste App op je telefoon</span>
+          <button class="wood-token token-cool" style="padding:4px 10px;font-size:11px;" onclick="closeInstallModal()">Sluit</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px;background:#18110C;border:1px solid #483424;border-radius:6px;">
+          <img src="icon-192.png" alt="Werkplaats Icoon" style="width:52px;height:52px;border-radius:10px;image-rendering:pixelated;border:1px solid #6E563E;" />
+          <div style="font-size:12px;line-height:1.45;color:var(--beige-hi);">
+            <strong>Werkplaats Mobiel</strong> draait als losstaande app (zonder adresbalk) met dit 16-bit icoon op je Honor startscherm.
+          </div>
+        </div>
+
+        <div style="padding:12px;background:#B49F80;color:#24180F;border-radius:6px;border:1px solid #5E4933;font-size:12.5px;line-height:1.55;">
+          <strong>Zo zet je hem vast op je scherm:</strong>
+          <ol style="margin:6px 0 0 18px;padding:0;">
+            <li>Tik rechtsboven in Chrome op de drie puntjes <strong>⋮</strong></li>
+            <li>Tik op <strong>Toevoegen aan startscherm</strong> (of <strong>App installeren</strong>)</li>
+            <li>Kies <strong>Installeren</strong> — hij staat nu als vaste unit tussen je apps!</li>
+          </ol>
+        </div>
+
+        <button class="wood-token token-oxblood" style="height:42px;font-weight:700;font-size:12px;" onclick="closeInstallModal()">
+          Begrepen
+        </button>
+      </div>
+    </div>
+
     <div id="toast"></div>
   </div>
 
@@ -1201,17 +1263,35 @@
       deferredInstallPrompt = e;
       const btn = document.getElementById('pwa-install-btn');
       if (btn) btn.style.display = 'flex';
+      const topBtn = document.getElementById('top-install-btn');
+      if (topBtn) topBtn.style.display = 'flex';
     });
 
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      const topBtn = document.getElementById('top-install-btn');
+      if (topBtn) topBtn.style.display = 'none';
+      showToast('📲 Werkplaats staat nu als vaste App op je startscherm!');
+    });
+
+    function closeInstallModal() {
+      document.getElementById('install-modal').classList.remove('open');
+    }
+
     async function installStandaloneApp() {
-      if (!deferredInstallPrompt) {
-        showToast('Tik in Chrome rechtsboven op ⋮ en kies "App installeren"');
+      playWoodTouch('wood');
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        if (choice && choice.outcome === 'accepted') {
+          document.getElementById('pwa-install-btn').style.display = 'none';
+          const topBtn = document.getElementById('top-install-btn');
+          if (topBtn) topBtn.style.display = 'none';
+        }
         return;
       }
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-      document.getElementById('pwa-install-btn').style.display = 'none';
+      document.getElementById('install-modal').classList.add('open');
     }
 
     // =========================================================================
@@ -1688,8 +1768,8 @@
       });
     }
 
-    function launchMessengerBird() {
-      lakeState.bird = { x: 18, y: 32, vx: 1.55, vy: -0.32, frame: 0 };
+    function launchMessengerBird(kind = 'dove') {
+      lakeState.bird = { x: 14, y: 34, vx: 1.45, vy: -0.26, frame: 0, kind };
     }
 
     async function fetchAlkmaarWeather() {
@@ -1841,28 +1921,56 @@
         if (st.life <= 0) lakeState.shootingStar = null;
       }
 
-      // 16-bit Postduif / Raaf (bij 'Naar boek')
+      // Grote 16-bit Postduif ('dove' bij Naar boek) of Raaf ('raven' bij Prik op bord) in het raampje
       if (lakeState.bird) {
         const b = lakeState.bird;
         b.x += b.vx;
-        b.y += b.vy;
+        b.y += b.vy + Math.sin(b.frame * 0.25) * 0.12;
         b.frame++;
         const bx = Math.round(b.x), by = Math.round(b.y);
-        const wingUp = Math.floor(b.frame / 3) % 2 === 0;
-        const bCol = isDay ? [226, 214, 192] : [186, 168, 140];
-        const pixels = [
-          [0, 0], [-1, 0], [1, 0],
-          [-2, wingUp ? -1 : 1], [-1, wingUp ? -2 : 1],
-          [1, wingUp ? -1 : 1]
-        ];
-        pixels.forEach(([dx, dy]) => {
+        const flap = Math.floor(b.frame / 3) % 4; // 4 vleugelslag-fases
+        const isRaven = b.kind === 'raven';
+
+        const bodyCol  = isRaven ? [20, 24, 34]   : [238, 228, 210];
+        const shadeCol = isRaven ? [38, 46, 66]   : [196, 182, 158];
+        const beakCol  = isRaven ? [92, 98, 112]  : [228, 168, 72];
+        const scrollCol = [216, 196, 160];
+        const sealCol   = isRaven ? [204, 156, 68] : [136, 42, 34];
+
+        const putBirdPx = (dx, dy, rgb) => {
           const px = bx + dx, py = by + dy;
           if (px >= 0 && px < W && py >= 0 && py < H) {
             const idx = (py * W + px) * 4;
-            d[idx] = bCol[0]; d[idx + 1] = bCol[1]; d[idx + 2] = bCol[2];
+            d[idx] = rgb[0]; d[idx + 1] = rgb[1]; d[idx + 2] = rgb[2]; d[idx + 3] = 255;
           }
-        });
-        if (b.x > W + 8 || b.y < -4) lakeState.bird = null;
+        };
+
+        // Staartveren & romp (duidelijk groter, 18x12 pixels in het raam!)
+        [[-7,1],[-6,1],[-6,0],[-5,0],[-4,0],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],
+         [-4,1],[-3,1],[-2,1],[-1,1],[0,1],[1,1],[2,-1],[3,-1],[4,-1]].forEach(([dx, dy]) => putBirdPx(dx, dy, bodyCol));
+        [[-8,2],[-7,2],[-5,1],[3,0]].forEach(([dx, dy]) => putBirdPx(dx, dy, shadeCol));
+
+        // Kop, oog & snavel
+        putBirdPx(3, -2, bodyCol);
+        putBirdPx(4, -2, [16, 12, 10]); // Oogje
+        putBirdPx(5, -1, beakCol);
+        putBirdPx(6, -1, beakCol);
+
+        // Vleugelslag (4 frames: hoog, midden, diep omlaag, zweef)
+        const wingCoords = flap === 0
+          ? [[-3,-1],[-2,-2],[-1,-3],[0,-4],[1,-5],[-2,-3],[-1,-4],[0,-5],[-4,-2],[-3,-3],[-2,-4]]
+          : flap === 1
+          ? [[-4,-1],[-3,-2],[-2,-2],[-1,-2],[0,-2],[1,-1],[-5,-2],[-4,-2],[-3,-3]]
+          : flap === 2
+          ? [[-2,1],[-1,2],[0,3],[1,4],[-3,2],[-2,3],[-1,4],[0,4]]
+          : [[-4,0],[-3,-1],[-2,-1],[-1,-1],[0,-1],[1,-1]];
+        wingCoords.forEach(([dx, dy], i) => putBirdPx(dx, dy, i % 3 === 0 ? shadeCol : bodyCol));
+
+        // Perkament-rolletje + zegel/speld onder de klauwtjes
+        [[-1,2],[0,2],[1,2]].forEach(([dx, dy]) => putBirdPx(dx, dy, scrollCol));
+        putBirdPx(0, 3, sealCol);
+
+        if (b.x > W + 14 || b.y < -8) lakeState.bird = null;
       }
 
       // Riet
@@ -2550,80 +2658,376 @@
     }
 
     /**
-     * 16-bit Verbrandings-ritueel als je een briefje wegdoet met 'Weg':
-     * Het perkament vat van onderaf vlam (gloeiende sintels, zwarte verkoolde rand,
-     * opstijgende vonkjes en rook) en vervliegt tot as!
+     * Grote 16-bit Vogel-vlucht over het scherm (op #celebration-canvas):
+     * - kind === 'raven': Grote 16-bit Raaf met briefrolletje + messing speld (bij 'Prik op bord')
+     * - kind === 'dove' : Grote 16-bit Witte Postduif met perkamentrol + rode lakzegel (bij 'Naar boek')
      */
-    function run16BitBurnAnimation(onDone) {
+    function runBig16BitBirdFlight(kind = 'dove') {
       const c = document.getElementById('celebration-canvas');
-      const W = 130, H = 276;
+      if (!c) return;
+      const W = 136, H = 260;
       c.width = W;
       c.height = H;
       const ctx = c.getContext('2d');
 
+      const isRaven = kind === 'raven';
       let frame = 0;
-      const maxFrames = 44;
-      const embers = Array.from({ length: 42 }, () => ({
-        x: 18 + Math.random() * (W - 36),
-        y: H * 0.72 + Math.random() * 30,
-        vx: (Math.random() - 0.5) * 1.4,
-        vy: -1.6 - Math.random() * 2.4,
-        smoke: Math.random() > 0.58
-      }));
+      const maxFrames = 42;
+      const feathers = [];
+
+      // 28x20 16-bit pixel-art vogel-renderer met 4 vleugelslag-fases
+      function drawBigBirdSprite(cx, cy, flapPhase) {
+        const C = isRaven
+          ? {
+              out:   '#0B0D13', // Diepzwart contour
+              body:  '#171B26', // Obsidiaan-zwart verenpak
+              mid:   '#252C3E', // Middernacht-blauw glans
+              hi:    '#3B4662', // Staalblauwe vleugel-highlight
+              beak:  '#586070', //Zware gekromde ravensnavel
+              beakD: '#383E4A',
+              eye:   '#ECA832', // Amberkleurig raven-oog
+              legs:  '#423B36',
+              scrl:  '#D8C49E', // Perkamentrolletje
+              scrlD: '#9E8660',
+              seal:  '#D4A446'  // Messing prikbord-speld
+            }
+          : {
+              out:   '#3E3227', // Warme donkerbruine 16-bit contour
+              body:  '#EFE6D5', // Parelwit / ivoor verenpak
+              mid:   '#D8C8AE', // Zachte perkament-schaduw
+              hi:    '#FAF5EC', // Helderwit vleugel-licht
+              beak:  '#E2A444', // Gouden duivensnavel
+              beakD: '#B07828',
+              eye:   '#1C1410', // Donker duivenoog
+              legs:  '#C86452', // Koraalrode pootjes
+              scrl:  '#DECAA4', // Perkamentrolletje
+              scrlD: '#A68E68',
+              seal:  '#8E2820'  // Rode ossenbloed lakzegel
+            };
+
+        const px = (dx, dy, col) => {
+          ctx.fillStyle = col;
+          ctx.fillRect(Math.round(cx + dx), Math.round(cy + dy), 1, 1);
+        };
+
+        // 1. Gespreide staartveren linksachter (-13..-7)
+        const tailRows = [
+          [-13, 2, C.out], [-12, 2, C.mid], [-11, 2, C.body],
+          [-14, 1, C.out], [-13, 1, C.hi],  [-12, 1, C.body], [-11, 1, C.body], [-10, 1, C.body],
+          [-13, 0, C.out], [-12, 0, C.mid], [-11, 0, C.body], [-10, 0, C.body], [-9, 0, C.body],
+          [-12, 3, C.out], [-11, 3, C.mid], [-10, 3, C.body], [-9, 2, C.body], [-8, 2, C.body]
+        ];
+        tailRows.forEach(([x, y, col]) => px(x, y, col));
+
+        // 2. Romp & borst (-8..+6)
+        for (let y = -2; y <= 3; y++) {
+          const xStart = y === -2 ? -5 : (y === 3 ? -6 : -8);
+          const xEnd   = y === -2 ?  5 : (y === 3 ?  3 :  6);
+          for (let x = xStart; x <= xEnd; x++) {
+            const isEdge = (y === 3 || x === xStart);
+            const isTop  = (y === -2);
+            px(x, y, isEdge ? C.mid : (isTop ? C.hi : C.body));
+          }
+        }
+        // Romp-contour onderlangs
+        for (let x = -7; x <= 4; x++) px(x, 4, C.out);
+
+        // 3. Kop, nek & snavel (+5..+13)
+        for (let y = -5; y <= -1; y++) {
+          for (let x = 4; x <= 8; x++) {
+            if (y === -5 && (x === 4 || x === 8)) continue;
+            px(x, y, y === -5 ? C.hi : C.body);
+          }
+        }
+        px(6, -6, C.out); px(7, -6, C.out);
+        px(7, -4, C.eye); // Oog
+
+        // Snavel (Raaf heeft een langere, zwaardere gekromde snavel; Duif een fijne snavel)
+        if (isRaven) {
+          px(9, -4, C.beak); px(10, -4, C.beak); px(11, -4, C.beak);
+          px(9, -3, C.beakD); px(10, -3, C.beak); px(11, -3, C.beak); px(12, -3, C.beakD);
+          px(12, -2, C.out); // Gekromde raven-punt
+        } else {
+          px(9, -3, C.beak); px(10, -3, C.beak);
+          px(9, -2, C.beakD); px(10, -2, C.beakD);
+        }
+
+        // 4. Vleugelslag met losse slagpennen (4 gedetailleerde 16-bit frames)
+        if (flapPhase === 0) {
+          // Hoog opgeslagen vleugel met gespreide slagpennen
+          for (let wy = -3; wy >= -12; wy--) {
+            const progress = (-3 - wy);
+            const wx0 = -5 - Math.floor(progress * 0.45);
+            const wx1 =  3 - Math.floor(progress * 0.25);
+            for (let wx = wx0; wx <= wx1; wx++) {
+              const col = (wx === wx1 || wy === -12) ? C.hi : (wx === wx0 ? C.out : (wy < -8 ? C.mid : C.body));
+              px(wx, wy, col);
+            }
+          }
+          // Losse slagpen-punten bovenaan
+          px(-9, -13, C.hi); px(-7, -14, C.hi); px(-5, -14, C.hi); px(-3, -13, C.mid);
+        } else if (flapPhase === 1) {
+          // Wijde zweef-/midden-slag
+          for (let wy = -2; wy >= -7; wy--) {
+            const wx0 = -9 + (wy + 2);
+            const wx1 =  3;
+            for (let wx = wx0; wx <= wx1; wx++) {
+              px(wx, wy, wy === -7 ? C.hi : (wx === wx0 ? C.out : C.mid));
+            }
+          }
+          px(-11, -6, C.hi); px(-10, -7, C.hi); px(-8, -8, C.hi);
+        } else if (flapPhase === 2) {
+          // Diepe neerslag (vleugel krachtig omlaag)
+          for (let wy = 0; wy <= 9; wy++) {
+            const wx0 = -4 - Math.floor(wy * 0.4);
+            const wx1 =  3 - Math.floor(wy * 0.2);
+            for (let wx = wx0; wx <= wx1; wx++) {
+              px(wx, wy, wx === wx1 ? C.hi : (wy > 6 ? C.mid : C.body));
+            }
+          }
+          px(-8, 9, C.hi); px(-6, 10, C.hi); px(-4, 10, C.mid);
+        } else {
+          // Herstel-slag schuin omhoog
+          for (let wy = -1; wy >= -9; wy--) {
+            const wx0 = -6 - Math.floor((-1 - wy) * 0.3);
+            const wx1 =  2;
+            for (let wx = wx0; wx <= wx1; wx++) {
+              px(wx, wy, wx === wx1 ? C.hi : C.body);
+            }
+          }
+        }
+
+        // 5. Pootjes + Opgerold Perkament-briefje met Lakzegel / Speld onder de vogel!
+        px(-1, 5, C.legs); px(1, 5, C.legs);
+        for (let sx = -4; sx <= 4; sx++) {
+          px(sx, 6, C.scrl);
+          px(sx, 7, sx % 3 === 0 ? C.scrlD : C.scrl);
+          px(sx, 8, C.scrlD);
+        }
+        // Lakzegel (duif) of Messing Speld (raaf) midden op de rol
+        px(0, 6, C.seal); px(-1, 7, C.seal); px(0, 7, C.seal); px(1, 7, C.seal); px(0, 8, C.seal);
+      }
 
       function step() {
         frame++;
         ctx.clearRect(0, 0, W, H);
 
         const p = frame / maxFrames;
-        // De brandlijn vreet van y = 215 omhoog naar y = 30
-        const burnLineY = Math.floor(215 - p * 195);
+        // Vliegt vanuit de perkamentrol (midden-onder) in een sierlijke boog omhoog over het scherm
+        const bx = isRaven
+          ? 24 + p * (W - 34)
+          : 20 + p * (W - 28);
+        const by = isRaven
+          ? 185 - Math.sin(p * Math.PI * 0.85) * 118 - p * 35
+          : 192 - p * 158 - Math.sin(p * Math.PI) * 22;
 
-        for (let x = 14; x < W - 14; x++) {
-          const jag = Math.floor(Math.sin(x * 0.35 + frame * 0.45) * 5 + smoothNoise(x * 0.2, frame * 0.2) * 8);
-          const fy = burnLineY + jag;
-
-          // Nog niet verbrand stukje perkament boven de vlammenlijn (alleen zichtbaar tijdens het opbranden)
-          if (p < 0.85) {
-            for (let y = Math.max(32, fy - 18); y < fy; y++) {
-              ctx.fillStyle = y > fy - 4 ? '#5E3E26' : 'rgba(180, 159, 128, 0.55)';
-              ctx.fillRect(x, y, 1, 1);
-            }
-          }
-
-          // De gloeiende verkolingsrand + 16-bit vlammetjes
-          for (let dy = -3; dy <= 10; dy++) {
-            const py = fy + dy;
-            if (py < 24 || py >= H - 20) continue;
-            if (dy < 0) {
-              ctx.fillStyle = '#E2B468'; // Helder beige-oranje vlamtopje
-            } else if (dy < 3) {
-              ctx.fillStyle = '#C85A28'; // Sintels / vuuroranje
-            } else if (dy < 6) {
-              ctx.fillStyle = '#7A2818'; // Donker bruinrood gloeiend kooltje
-            } else {
-              ctx.fillStyle = '#18100C'; // Verkoolde zwarte as-rand
-            }
-            ctx.fillRect(x, py, 1, 1);
-          }
+        if (frame % 5 === 1) {
+          feathers.push({
+            x: bx - 8,
+            y: by + 2,
+            vx: -0.4 - Math.random() * 0.4,
+            vy: 0.35 + Math.random() * 0.4,
+            life: 16,
+            col: isRaven ? '#252C3E' : '#EFE6D5'
+          });
         }
 
-        // Opstijgende vonkjes en rookpluimpjes
-        embers.forEach((e) => {
-          e.x += e.vx + Math.sin(frame * 0.2 + e.y * 0.1) * 0.3;
-          e.y += e.vy;
-          if (e.y < burnLineY - 45) {
-            e.y = burnLineY + Math.random() * 12;
-            e.x = 18 + Math.random() * (W - 36);
-          }
-          ctx.fillStyle = e.smoke ? 'rgba(60, 48, 40, 0.65)' : (Math.random() > 0.4 ? '#D96B27' : '#E2C488');
-          ctx.fillRect(Math.floor(e.x), Math.floor(e.y), e.smoke ? 3 : 2, e.smoke ? 3 : 2);
-        });
+        // Dwarrelende veertjes achter de vogel
+        for (let i = feathers.length - 1; i >= 0; i--) {
+          const f = feathers[i];
+          f.x += f.vx + Math.sin(frame * 0.3 + i) * 0.25;
+          f.y += f.vy;
+          f.life--;
+          ctx.fillStyle = f.col;
+          ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 1);
+          if (f.life <= 0) feathers.splice(i, 1);
+        }
+
+        const flapPhase = Math.floor(frame / 3) % 4;
+        drawBigBirdSprite(bx, by, flapPhase);
 
         if (frame < maxFrames) {
           requestAnimationFrame(step);
         } else {
           ctx.clearRect(0, 0, W, H);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    /**
+     * Echte 16-bit Bayer-geditherde Perkament-Verbranding bij '🔥 Weg':
+     * - Vreet het daadwerkelijke open briefje (#open-card-scroll) van onder naar boven weg met een
+     *   organische gekartelde clip-path, zodat je onder het vuur het donkere notenhout ziet!
+     * - Tekent op #burn-overlay-canvas een 16-bit Bayer-geditherde vuurlijn met geschroeid bruin
+     *   perkament, zwarte koolrand, gloeiende goud-oranje sintel-ader, dansende 16-bit vlamtongen en rook.
+     */
+    const FIRE_PAL_16BIT = [
+      [42, 12, 8],     // Diep mahonie-rood
+      [88, 20, 12],    // Donker haardvuur-rood
+      [146, 38, 16],   // Gloeiend karmozijn
+      [198, 76, 20],   // Rijk vuur-oranje
+      [234, 134, 32],  // Goud-amber
+      [248, 196, 74],  // Helder vlam-goud
+      [255, 242, 182]  // Witgouden sintel-kern
+    ];
+
+    function run16BitBurnAnimation(onDone) {
+      const cardEl = document.getElementById('open-card-scroll');
+      const c = document.getElementById('burn-overlay-canvas');
+      if (!c || !cardEl) {
+        if (onDone) onDone();
+        return;
+      }
+
+      const W = 136, H = 210;
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+      const img = ctx.createImageData(W, H);
+      const d = img.data;
+
+      let frame = 0;
+      const maxFrames = 54;
+
+      // Vonkjes en opkrullende verkoolde snippertjes
+      const sparks = Array.from({ length: 36 }, () => ({
+        x: 10 + Math.random() * (W - 20),
+        y: H,
+        vx: (Math.random() - 0.5) * 1.1,
+        vy: -1.4 - Math.random() * 1.8,
+        life: Math.random() * 20,
+        maxLife: 18 + Math.random() * 14,
+        ash: Math.random() > 0.62
+      }));
+
+      const burnY = new Float32Array(W);
+
+      function step() {
+        frame++;
+        const p = frame / maxFrames;
+        // De brandlijn vreet van onderkant briefje (H + 10) helemaal naar boven (-18)
+        const baseLine = (H + 8) - Math.pow(p, 0.92) * (H + 34);
+
+        // 1. Bereken de organische 16-bit gekartelde brandcontour per kolom x
+        const clipPoints = ['0% 0%', '100% 0%'];
+        for (let x = 0; x < W; x++) {
+          const wave1 = Math.sin(x * 0.11 + frame * 0.18) * 6.5;
+          const wave2 = (smoothNoise(x * 0.08, p * 3.5) - 0.5) * 18.0;
+          const edgeDip = Math.pow(Math.abs((x - W / 2) / (W / 2)), 2) * -9.0; // Randen vatten iets sneller vlam
+          burnY[x] = baseLine + wave1 + wave2 + edgeDip;
+        }
+
+        // Maak een polygon clip-path zodat het echte briefje (#open-card-scroll) onder de brandlijn echt verdwijnt!
+        for (let x = W - 1; x >= 0; x -= 4) {
+          const xp = ((x / (W - 1)) * 100).toFixed(1);
+          const yp = Math.max(0, Math.min(100, ((burnY[x] + 3) / H) * 100)).toFixed(1);
+          clipPoints.push(`${xp}% ${yp}%`);
+        }
+        cardEl.style.clipPath = `polygon(${clipPoints.join(', ')})`;
+        cardEl.style.webkitClipPath = `polygon(${clipPoints.join(', ')})`;
+
+        // 2. Wis de pixel-buffer
+        d.fill(0);
+
+        // 3. Render de 16-bit geschroeide perkamentrand, kool-ader en Bayer-geditherde vlamtongen
+        for (let x = 3; x < W - 3; x++) {
+          const by = burnY[x];
+
+          // A. Geschroeid/geroosterd perkament + verkoolde rand BOVEN de brandlijn (op het papier zelf)
+          const singeTop = Math.max(0, Math.floor(by - 16));
+          const charBot  = Math.min(H - 1, Math.floor(by + 3));
+
+          for (let y = singeTop; y <= charBot; y++) {
+            const distToFire = by - y; // > 0 is boven de brandlijn op het papier
+            const idx = (y * W + x) * 4;
+            const n = smoothNoise(x * 0.25, y * 0.25 + frame * 0.1);
+
+            if (distToFire <= 1.8) {
+              // Gloeiende wit-gouden / oranje sintel-ader precies op de verkolende papiervezels!
+              const emberVal = Math.max(0.45, Math.min(0.99, 0.85 - Math.abs(distToFire) * 0.25 + (n - 0.5) * 0.3));
+              const rgb = ditherStep(FIRE_PAL_16BIT, emberVal, x, y);
+              d[idx] = rgb[0]; d[idx + 1] = rgb[1]; d[idx + 2] = rgb[2]; d[idx + 3] = 255;
+            } else if (distToFire <= 5.5) {
+              // Verkoolde zwarte papier-rand (met 16-bit Bayer-dithering)
+              const charDark = distToFire < 3.5 ? [16, 10, 7] : [34, 20, 12];
+              d[idx] = charDark[0]; d[idx + 1] = charDark[1]; d[idx + 2] = charDark[2]; d[idx + 3] = 245;
+            } else {
+              // Geschroeide bruine sepia-gloed die in het perkament trekt
+              const singeT = (distToFire - 5.5) / 10.5;
+              const bayer = (BAYER4[y & 3][x & 3] + 0.5) / 16.0;
+              if (1.0 - singeT + (n - 0.5) * 0.25 > bayer * 0.85) {
+                const darkToast = singeT < 0.45 ? [58, 34, 18] : [96, 64, 36];
+                d[idx] = darkToast[0];
+                d[idx + 1] = darkToast[1];
+                d[idx + 2] = darkToast[2];
+                d[idx + 3] = Math.floor((1.0 - singeT) * 210);
+              }
+            }
+          }
+
+          // B. Echte 16-bit Bayer-geditherde Vlamtongen die opstijgen vanaf de brandlijn
+          const tongueNoise = smoothNoise(x * 0.16, frame * 0.24);
+          const tongueNoise2 = smoothNoise(x * 0.32 + 17, frame * 0.38);
+          const flameHeight = Math.floor(14 + tongueNoise * 22 + tongueNoise2 * 12);
+
+          const fTop = Math.max(0, Math.floor(by - flameHeight));
+          const fBot = Math.min(H - 1, Math.floor(by + 2));
+
+          for (let y = fTop; y <= fBot; y++) {
+            const hRatio = (by - y) / Math.max(1, flameHeight); // 0 bij basis, 1 bij vlam-punt
+            if (hRatio < 0 || hRatio > 1) continue;
+
+            // Horizontale versmalling per vlam-kolom voor echte puntige 16-bit vlamtongen
+            const turb = (smoothNoise(x * 0.22, y * 0.16 + frame * 0.32) - 0.5) * 0.38;
+            const heat = Math.max(0, Math.min(0.999, (1.0 - Math.pow(hRatio, 0.82)) + turb));
+
+            const bayerThr = (BAYER4[y & 3][x & 3] + 0.5) / 16.0;
+            if (heat < 0.16 && heat < bayerThr * 0.35) continue;
+
+            const rgb = ditherStep(FIRE_PAL_16BIT, heat, x, y);
+            const idx = (y * W + x) * 4;
+            d[idx] = rgb[0];
+            d[idx + 1] = rgb[1];
+            d[idx + 2] = rgb[2];
+            d[idx + 3] = heat > 0.24 ? 255 : 210;
+          }
+        }
+
+        // 4. Opstijgende 16-bit sintel-vonkjes & verkoolde as-snippertjes
+        sparks.forEach((sp) => {
+          sp.x += sp.vx + Math.sin(frame * 0.25 + sp.y * 0.12) * 0.35;
+          sp.y += sp.vy;
+          sp.life++;
+          const sx = Math.round(sp.x);
+          if (sp.life >= sp.maxLife || sx < 4 || sx >= W - 4 || sp.y < 2) {
+            sp.x = 8 + Math.random() * (W - 16);
+            sp.y = burnY[Math.floor(sp.x)] + (Math.random() - 0.5) * 6;
+            sp.life = 0;
+            sp.maxLife = 14 + Math.random() * 16;
+          }
+          const sy = Math.round(sp.y);
+          if (sx >= 1 && sx < W - 1 && sy >= 1 && sy < H - 1) {
+            const lifeRatio = sp.life / sp.maxLife;
+            const rgb = sp.ash
+              ? (lifeRatio < 0.35 ? [142, 42, 18] : [36, 26, 22])
+              : ditherStep(FIRE_PAL_16BIT, Math.max(0.15, 1.0 - lifeRatio * 0.85), sx, sy);
+            const idx = (sy * W + sx) * 4;
+            d[idx] = rgb[0]; d[idx + 1] = rgb[1]; d[idx + 2] = rgb[2]; d[idx + 3] = 255;
+            if (!sp.ash && sx + 1 < W) {
+              d[idx + 4] = rgb[0]; d[idx + 5] = rgb[1]; d[idx + 6] = rgb[2]; d[idx + 7] = 220;
+            }
+          }
+        });
+
+        ctx.putImageData(img, 0, 0);
+
+        if (frame < maxFrames) {
+          requestAnimationFrame(step);
+        } else {
+          ctx.clearRect(0, 0, W, H);
+          cardEl.style.clipPath = 'none';
+          cardEl.style.webkitClipPath = 'none';
           if (onDone) onDone();
         }
       }
@@ -2832,8 +3236,13 @@
       document.getElementById('scroll-undo-btn').classList.remove('visible');
       saveLocalState();
 
+      // Laat de grote 16-bit Raaf met het briefrolletje naar het Prikbord vliegen!
+      launchMessengerBird('raven');
+      runBig16BitBirdFlight('raven');
+      showToast(`🪶 Raaf vliegt je briefje naar het Prikbord`);
+
       syncToGitHubIfConfigured(`Nieuw briefje: ${title}`);
-      switchTab(2);
+      setTimeout(() => switchTab(2), 420);
     }
 
     async function stuurNaarBoek() {
@@ -2844,8 +3253,9 @@
       }
       if (wantListening) toggleSpeech();
       playBookChord();
-      launchMessengerBird(); // Laat de 16-bit postduif/raaf over het meer wegvliegen!
-      run16BitCelebration(0);
+      // Laat de grote 16-bit Witte Postduif met lakzegel-rol naar het Boek vliegen!
+      launchMessengerBird('dove');
+      runBig16BitBirdFlight('dove');
 
       const today = new Date().toISOString().slice(0, 10);
       const firstWords = raw.split(/\s+/).slice(0, 5).join(' ').replace(/[^\w\s-]/g, '').trim() || 'Inworp';
