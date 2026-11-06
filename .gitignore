@@ -1,5 +1,4 @@
 ontwerp/
 *.bat
 *.py
-*.png
-
+qr-*.png

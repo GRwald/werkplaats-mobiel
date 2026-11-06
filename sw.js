@@ -1,5 +1,5 @@
-const CACHE_NAME = 'werkplaats-mobiel-v7';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'werkplaats-mobiel-v8';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS)));
@@ -18,7 +18,6 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || e.request.url.includes('api.github.com') || e.request.url.includes('open-meteo.com') || e.request.url.includes('anthropic.com')) {
     return;
   }
-  // Netwerk-eerst zodat nieuwe updates op GitHub Pages meteen doorkomen op je telefoon
   e.respondWith(
     fetch(e.request)
       .then((res) => {

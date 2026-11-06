@@ -8,6 +8,8 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Werkplaats</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
@@ -58,8 +60,6 @@
 
     /* ==========================================================================
        HONOR MAGIC V3 / FOLD KLAPSCHERM MODUS (OPENGEKLAPT TWEELUIK!)
-       Op een opengeklapt Fold-scherm (600px–960px breed) of als Tweeluik aan staat,
-       ligt de schrijfkist open: links Uit je hoofd, rechts Het Bord naast elkaar!
        ========================================================================== */
     @media (min-width: 580px) and (max-width: 980px) {
       #app-shell.fold-auto {
@@ -75,7 +75,6 @@
         gap: 14px;
         position: relative;
       }
-      /* Messing scharnier-naad in het midden van het klapscherm */
       #app-shell.fold-auto .panels-wrapper::after {
         content: '';
         position: absolute;
@@ -101,7 +100,6 @@
       }
     }
 
-    /* Handmatige Tweeluik-modus (ook te testen op desktop of geforceerd op Fold) */
     #app-shell.force-diptych {
       max-width: 860px;
     }
@@ -274,7 +272,7 @@
     }
 
     /* ==========================================================================
-       SCHERM 1: UIT JE HOOFD
+       SCHERM 1: UIT JE HOOFD (MET KISKAS-RAAM & KLIKBARE REDIGEER-VEER)
        ========================================================================== */
     .window-frame {
       position: relative;
@@ -288,9 +286,9 @@
       box-shadow:
         inset 0 1px 0 rgba(196, 174, 140, 0.2),
         0 3px 8px rgba(0, 0, 0, 0.55);
+      cursor: pointer;
     }
 
-    /* Als het toetsenbord op Android omhoog klapt, maak het raampje iets compacter maar behoud de verhouding */
     @media (max-height: 560px) {
       .window-frame {
         height: 68px;
@@ -370,6 +368,18 @@
           rgba(32, 21, 12, 0.0) 91%,
           rgba(32, 21, 12, 0.38) 100%);
       box-shadow: inset 0 0 22px rgba(46, 31, 17, 0.28);
+      overflow: hidden;
+    }
+
+    /* Overlay-canvas voor de 16-bit vliegende Redigeer-veer over je tekst! */
+    #quill-sweep-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      pointer-events: none;
+      z-index: 10;
     }
 
     #braindump-input {
@@ -384,6 +394,8 @@
       line-height: 1.6;
       color: var(--ink-dark);
       user-select: text;
+      position: relative;
+      z-index: 2;
     }
 
     #braindump-input::placeholder {
@@ -391,7 +403,6 @@
       font-style: italic;
     }
 
-    /* Live mijmer-regel tijdens spraakherkenning zodat nog niet afgeronde zinnen niet dubbel typen */
     #speech-interim-preview {
       font-family: 'Merriweather', serif;
       font-size: 13.5px;
@@ -399,6 +410,8 @@
       color: #5E3A24;
       min-height: 0;
       padding-top: 2px;
+      position: relative;
+      z-index: 2;
     }
 
     .scroll-footer {
@@ -408,6 +421,26 @@
       position: relative;
       padding-top: 4px;
       min-height: 74px;
+      z-index: 4;
+    }
+
+    /* Subtiel terug-knopje linksonder op het perkament na het redigeren met het veertje */
+    #scroll-undo-btn {
+      position: absolute;
+      left: 0;
+      bottom: 8px;
+      display: none;
+      padding: 4px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: rgba(110, 86, 58, 0.28);
+      border: 1px solid rgba(74, 55, 39, 0.45);
+      border-radius: 4px;
+      color: #3E2B1C;
+      cursor: pointer;
+    }
+    #scroll-undo-btn.visible {
+      display: block;
     }
 
     #spreek-btn {
@@ -447,15 +480,48 @@
       to   { transform: scale(1.05); }
     }
 
-    .quill-illust {
+    /* Het klikbare Veertje rechtsonder op het perkament! */
+    #quill-btn {
       position: absolute;
-      right: 2px;
-      bottom: 2px;
-      width: 42px;
-      height: 52px;
+      right: 0;
+      bottom: 0;
+      width: 56px;
+      height: 64px;
+      background: transparent;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    #quill-btn:hover {
+      transform: translateY(-2px);
+      filter: drop-shadow(0 2px 4px rgba(42, 28, 16, 0.35));
+    }
+
+    #quill-btn:active {
+      transform: translateY(3px) rotate(-6deg);
+    }
+
+    #quill-btn.dipping {
+      animation: dip-quill 0.55s ease-in-out;
+    }
+
+    @keyframes dip-quill {
+      0%   { transform: translateY(0) rotate(0deg); }
+      35%  { transform: translateY(7px) rotate(-12deg); }
+      70%  { transform: translateY(-8px) rotate(8deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    .quill-illust {
+      width: 44px;
+      height: 54px;
       image-rendering: pixelated;
       pointer-events: none;
-      opacity: 0.9;
     }
 
     .bottom-actions-2col {
@@ -929,10 +995,10 @@
 
       <div class="panels-wrapper">
         <!-- ==================================================================
-             SCHERM 1: UIT JE HOOFD
+             SCHERM 1: UIT JE HOOFD (KISKAS-RAAM + REDIGEER-VEERTJE)
              ================================================================== -->
         <div id="screen-1" class="screen active">
-          <div class="window-frame">
+          <div class="window-frame" onclick="skipStoneOnLake(event)" title="Tik op het meer om een steentje te kiskassen">
             <div class="window-sponning">
               <canvas id="lake-canvas" width="180" height="54"></canvas>
             </div>
@@ -941,16 +1007,21 @@
           <div class="scroll-assembly">
             <div class="scroll-roller"></div>
             <div class="scroll-body">
+              <canvas id="quill-sweep-canvas"></canvas>
               <textarea
                 id="braindump-input"
                 placeholder="Schrijf of spreek uit wat er in je hoofd zit..."
               ></textarea>
               <div id="speech-interim-preview"></div>
               <div class="scroll-footer">
+                <button id="scroll-undo-btn" onclick="undoScrollEdit()">↶ Oertekst</button>
                 <button id="spreek-btn" onclick="toggleSpeech()">
                   <span id="spreek-label">Spreek</span>
                 </button>
-                <canvas id="quill-canvas" class="quill-illust" width="24" height="29"></canvas>
+                <!-- HET KLIKBARE VEERTJE: doopt in de inkt en redigeert je tekst met een 16-bit animatie! -->
+                <button id="quill-btn" onclick="redigeerMetVeertje()" title="Doop de veer in de inkt en redigeer je tekst">
+                  <canvas id="quill-canvas" class="quill-illust" width="24" height="29"></canvas>
+                </button>
               </div>
             </div>
             <div class="scroll-roller"></div>
@@ -1037,7 +1108,7 @@
               <span>Lakzegel erop (Klaar)</span>
             </button>
             <button class="wood-token token-cool" style="height:48px;padding:0 16px;font-family:'Merriweather',serif;font-size:12px;font-weight:700;" onclick="deleteCurrentNote()">
-              <span>Weg</span>
+              <span>🔥 Weg</span>
             </button>
           </div>
         </div>
@@ -1055,13 +1126,17 @@
       </div>
     </div>
 
-    <!-- MODAL 2: INSTELLINGEN (GELUID, FOLD-TWEELUIK, RAAM & GITHUB SYNC) -->
+    <!-- MODAL 2: INSTELLINGEN -->
     <div id="settings-modal" class="modal-backdrop" onclick="if(event.target===this)closeSettingsModal()">
       <div class="modal-box">
         <div class="modal-title">
-          <span>Instellingen</span>
+          <span>Instellingen & Koppeling</span>
           <button class="wood-token token-cool" style="padding:4px 10px;font-size:11px;" onclick="closeSettingsModal()">Sluit</button>
         </div>
+
+        <button id="pwa-install-btn" class="wood-token token-oxblood" style="height:42px;font-weight:700;font-size:12px;display:none;" onclick="installStandaloneApp()">
+          📲 Installeer als losstaande App
+        </button>
 
         <div style="padding:10px;background:#18110C;border:1px solid #483424;border-radius:6px;display:flex;flex-direction:column;gap:6px;">
           <div class="toggle-row">
@@ -1069,11 +1144,11 @@
             <button id="toggle-quill-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleQuillSound()">Aan</button>
           </div>
           <div class="toggle-row">
-            <span>Hout- & papiergeluidjes bij aanraken</span>
+            <span>Hout-, vuur- & papiergeluidjes</span>
             <button id="toggle-ui-sound-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleUiSound()">Aan</button>
           </div>
           <div class="toggle-row" style="border-bottom:none;">
-            <span>Honor Fold Tweeluik (opengeklapt naast elkaar)</span>
+            <span>Honor Fold Tweeluik</span>
             <button id="toggle-fold-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="cycleFoldMode()">Auto</button>
           </div>
         </div>
@@ -1090,16 +1165,16 @@
         </div>
 
         <div>
-          <label class="field-label">GitHub Repository</label>
+          <label class="field-label">GitHub Token (vindt je kluis-repo automatisch!)</label>
+          <input id="cfg-gh-token" type="password" class="pixel-input" placeholder="ghp_... of github_pat_..." />
+        </div>
+        <div>
+          <label class="field-label">GitHub Repository (wordt automatisch ingevuld als je hem leeg laat)</label>
           <input id="cfg-gh-repo" class="pixel-input" placeholder="bijv. GRwald/Ai-Werkplaats" />
         </div>
         <div>
-          <label class="field-label">GitHub Token</label>
-          <input id="cfg-gh-token" type="password" class="pixel-input" placeholder="ghp_..." />
-        </div>
-        <div>
-          <label class="field-label">Claude API-sleutel (optioneel)</label>
-          <input id="cfg-claude-key" type="password" class="pixel-input" placeholder="sk-ant-..." />
+          <label class="field-label">Claude API-sleutel (voor het Redigeer-veertje & briefjes)</label>
+          <input id="cfg-claude-key" type="password" class="pixel-input" placeholder="sk-ant-... (werkt ook zonder sleutel!)" />
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
@@ -1107,7 +1182,7 @@
             Bewaar
           </button>
           <button class="wood-token token-oak" style="height:40px;font-weight:700;font-size:12px;" onclick="pullFromGitHub()">
-            Haal kladblok op
+            Koppel & Haal op
           </button>
         </div>
       </div>
@@ -1118,7 +1193,29 @@
 
   <script>
     // =========================================================================
-    // 1. 16-BIT PIXEL & SUBTIELE AKOESTISCHE GELUIDS-ENGINE (GEEN DOFFE PIEP!)
+    // 0. STANDALONE APP INSTALLATIE (EIGEN TABBLAD / EIGEN VENSTER OP ANDROID)
+    // =========================================================================
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('pwa-install-btn');
+      if (btn) btn.style.display = 'flex';
+    });
+
+    async function installStandaloneApp() {
+      if (!deferredInstallPrompt) {
+        showToast('Tik in Chrome rechtsboven op ⋮ en kies "App installeren"');
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      document.getElementById('pwa-install-btn').style.display = 'none';
+    }
+
+    // =========================================================================
+    // 1. 16-BIT PIXEL & GELUIDS-ENGINE (INCL. HAARDVUUR-GEKNISPER & INKT-DOOP)
     // =========================================================================
     const BAYER4 = [
       [ 0,  8,  2, 10],
@@ -1165,7 +1262,6 @@
       return audioCtx;
     }
 
-    // Ganzenveer op perkament (kan uit in instellingen, en gedrosseld zodat hij nooit ratelt)
     function playQuillScratch() {
       if (!state.quillSoundOn) return;
       const nowMs = performance.now();
@@ -1191,11 +1287,6 @@
       src.start();
     }
 
-    /**
-     * Subtiele hout/papier-aanraking (GEEN oscillator-piep meer!):
-     * Korte, droge gefilterde ruis-tik van 16 ms met 3 subtiele klankkleuren
-     * ('wood', 'paper', 'pin') zodat klikken natuurlijk en rustig voelt.
-     */
     function playWoodTouch(kind = 'wood') {
       if (!state.uiSoundOn) return;
       const ctx = getAudio();
@@ -1215,6 +1306,52 @@
         ? (1800 + Math.random() * 300)
         : (kind === 'pin' ? 1150 : 680 + Math.random() * 140);
       filter.Q.value = kind === 'paper' ? 1.8 : 2.4;
+      src.connect(filter);
+      filter.connect(ctx.destination);
+      src.start();
+    }
+
+    // Zacht water-plonsje als een steentje over het meer kiskast
+    function playWaterSkipSound(bounceIdx = 0) {
+      if (!state.uiSoundOn) return;
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const baseFreq = 320 + bounceIdx * 95;
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.45, now + 0.045);
+      gain.gain.setValueAtTime(0.05 / (1 + bounceIdx * 0.35), now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.055);
+    }
+
+    // Knisperend 16-bit haardvuur als je een briefje verbrandt bij 'Weg'
+    function playFireCrackleSound() {
+      if (!state.uiSoundOn) return;
+      const ctx = getAudio();
+      if (!ctx) return;
+      const dur = 0.85;
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        const env = Math.sin(t * Math.PI);
+        // Zachte vlam-ruis + kleine knisper-tikjes van brandend perkament
+        const crackle = Math.random() > 0.992 ? (Math.random() * 2 - 1) * 0.45 : 0;
+        const whoosh = (Math.random() * 2 - 1) * 0.07 * env;
+        data[i] = whoosh + crackle * env;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1450;
       src.connect(filter);
       filter.connect(ctx.destination);
       src.start();
@@ -1263,7 +1400,6 @@
       const ctx = getAudio();
       if (!ctx) return;
       const now = ctx.currentTime;
-      // Zachte was-stempel druk (droge plop i.p.v. harde piep)
       playWoodTouch('paper');
 
       const chords = [
@@ -1522,7 +1658,7 @@
     }
 
     // =========================================================================
-    // 3. LIVE 16-BIT RAAM (ZONDER STREEPJES-ARTEFACT BIJ TIKKEN!)
+    // 3. LEVEND 16-BIT RAAM (MET KISKAS-STEENTJE, POSTDUIF/RAAF & VALLENDE STER!)
     // =========================================================================
     const lakeState = {
       brightMode: false,
@@ -1531,8 +1667,30 @@
       weatherCode: 0,
       tempC: 11,
       rippleEnergy: 0,
-      t: 0
+      t: 0,
+      rings: [],          // Uitdijende waterkringen als je een steentje kiskast
+      bird: null,         // Postduif / Raaf die over het meer vliegt bij 'Naar boek'
+      shootingStar: null  // Vallende ster 's nachts
     };
+
+    function skipStoneOnLake(ev) {
+      // Gooi een plat steentje dat 3 keer over het meer stuitert!
+      const bounces = [
+        { x: 46, y: 39, delay: 0 },
+        { x: 84, y: 36, delay: 230 },
+        { x: 118, y: 34, delay: 440 }
+      ];
+      bounces.forEach((b, idx) => {
+        setTimeout(() => {
+          playWaterSkipSound(idx);
+          lakeState.rings.push({ x: b.x, y: b.y, r: 1, maxR: 15 - idx * 3 });
+        }, b.delay);
+      });
+    }
+
+    function launchMessengerBird() {
+      lakeState.bird = { x: 18, y: 32, vx: 1.55, vy: -0.32, frame: 0 };
+    }
 
     async function fetchAlkmaarWeather() {
       try {
@@ -1628,7 +1786,6 @@
             const wt = wy / (H - horizon);
             col = ditherStep(waterPal, 1 - wt * 0.7, x, y);
 
-            // Alleen een zachte, natuurlijke verbreding van de maan-reflectie bij stem/typen (GEEN streepjes over het water!)
             const sway = Math.sin(wy * 0.65 - t * 1.8) * (0.9 + lakeState.rippleEnergy * 1.2);
             const dx = Math.abs(x - mx + sway);
             const spread = (2.2 + wy * 0.52) + lakeState.rippleEnergy * 1.6;
@@ -1646,6 +1803,69 @@
         }
       }
 
+      // Kiskas-waterkringen tekenen
+      for (let i = lakeState.rings.length - 1; i >= 0; i--) {
+        const rg = lakeState.rings[i];
+        rg.r += 0.42;
+        if (rg.r > rg.maxR) {
+          lakeState.rings.splice(i, 1);
+          continue;
+        }
+        for (let a = 0; a < 24; a++) {
+          const ang = (a / 24) * Math.PI * 2;
+          const rx = Math.round(rg.x + Math.cos(ang) * rg.r);
+          const ry = Math.round(rg.y + Math.sin(ang) * rg.r * 0.38);
+          if (rx >= 0 && rx < W && ry >= horizon && ry < H) {
+            const idx = (ry * W + rx) * 4;
+            d[idx] = orbCore[0]; d[idx + 1] = orbCore[1]; d[idx + 2] = orbCore[2];
+          }
+        }
+      }
+
+      // Vallende ster 's nachts (heel af en toe)
+      if (!isDay && !lakeState.shootingStar && Math.random() < 0.005) {
+        lakeState.shootingStar = { x: 25 + Math.random() * 80, y: 4, vx: 3.2, vy: 1.1, life: 10 };
+      }
+      if (lakeState.shootingStar) {
+        const st = lakeState.shootingStar;
+        for (let s = 0; s < 4; s++) {
+          const sx = Math.round(st.x - st.vx * s * 0.6);
+          const sy = Math.round(st.y - st.vy * s * 0.6);
+          if (sx >= 0 && sx < W && sy >= 0 && sy < horizon - 4) {
+            const idx = (sy * W + sx) * 4;
+            const cStar = s === 0 ? orbCore : orbRim;
+            d[idx] = cStar[0]; d[idx + 1] = cStar[1]; d[idx + 2] = cStar[2];
+          }
+        }
+        st.x += st.vx; st.y += st.vy; st.life--;
+        if (st.life <= 0) lakeState.shootingStar = null;
+      }
+
+      // 16-bit Postduif / Raaf (bij 'Naar boek')
+      if (lakeState.bird) {
+        const b = lakeState.bird;
+        b.x += b.vx;
+        b.y += b.vy;
+        b.frame++;
+        const bx = Math.round(b.x), by = Math.round(b.y);
+        const wingUp = Math.floor(b.frame / 3) % 2 === 0;
+        const bCol = isDay ? [226, 214, 192] : [186, 168, 140];
+        const pixels = [
+          [0, 0], [-1, 0], [1, 0],
+          [-2, wingUp ? -1 : 1], [-1, wingUp ? -2 : 1],
+          [1, wingUp ? -1 : 1]
+        ];
+        pixels.forEach(([dx, dy]) => {
+          const px = bx + dx, py = by + dy;
+          if (px >= 0 && px < W && py >= 0 && py < H) {
+            const idx = (py * W + px) * 4;
+            d[idx] = bCol[0]; d[idx + 1] = bCol[1]; d[idx + 2] = bCol[2];
+          }
+        });
+        if (b.x > W + 8 || b.y < -4) lakeState.bird = null;
+      }
+
+      // Riet
       const reeds = [9, 13, 17, 22, W - 20, W - 15, W - 10];
       const wind = Math.sin(t * 0.9) * 0.04;
       reeds.forEach((rx) => {
@@ -1662,7 +1882,173 @@
     }
 
     // =========================================================================
-    // 4. DATA, UNDO-STACK & INSTELLINGEN
+    // 4. HET VEERTJE: 16-BIT REDIGEER-ANIMATIE & TEKST-OPSCHONER
+    // =========================================================================
+    let previousScrollText = '';
+
+    function undoScrollEdit() {
+      if (!previousScrollText) return;
+      const inputEl = document.getElementById('braindump-input');
+      inputEl.value = previousScrollText;
+      previousScrollText = '';
+      document.getElementById('scroll-undo-btn').classList.remove('visible');
+      playWoodTouch('paper');
+      showToast('Oorspronkelijke tekst teruggezet');
+    }
+
+    /**
+     * Ingebouwde Nederlandse spreektaal-redacteur (werkt altijd, ook zonder Claude API-sleutel!):
+     * Haalt gestamel, dubbele woorden en vulwoorden ('eh', 'uhm', 'zeg maar', 'even kijken hoor') weg
+     * en zet rustige zinnen met hoofdletters en leestekens neer.
+     */
+    function localPolishDutchText(raw) {
+      let s = raw.trim();
+      if (!s) return s;
+
+      // 1. Verwijder typische spreek-aanloopjes en aarzelingen
+      s = s.replace(/\b(eh+|uh+m*|um+|hmm+|even kijken hoor|even kijken|laat maar zeggen)\b[,]?\s*/gi, ' ');
+      // 2. Verwijder direct herhaalde woorden ("ik ik denk" -> "ik denk", "dat we dat we" -> "dat we")
+      s = s.replace(/\b(\w+)(\s+\1\b)+/gi, '$1');
+      s = s.replace(/\b(\w+\s+\w+)(\s+\1\b)+/gi, '$1');
+      // 3. Vervang losse verbindingsstukjes door rustige leestekens
+      s = s.replace(/\s+(en toen dacht ik van|en eigenlijk ook|en trouwens)\s+/gi, '. Daarnaast ');
+      s = s.replace(/\s+maar goed\s+/gi, '. ');
+      s = s.replace(/\s+/g, ' ').trim();
+
+      // 4. Maak nette zinnen met hoofdletter aan het begin en een punt aan het eind
+      const rawSentences = s.split(/(?<=[.!?])\s+/);
+      const polished = rawSentences.map((sent) => {
+        let clean = sent.trim();
+        if (!clean) return '';
+        clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+        if (!/[.!?]$/.test(clean)) clean += '.';
+        return clean;
+      }).filter(Boolean);
+
+      return polished.join(' ');
+    }
+
+    function runQuillSweepAnimation(onComplete) {
+      const qBtn = document.getElementById('quill-btn');
+      qBtn.classList.add('dipping');
+      setTimeout(() => qBtn.classList.remove('dipping'), 600);
+
+      const c = document.getElementById('quill-sweep-canvas');
+      const W = 120, H = 160;
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+
+      let frame = 0;
+      const maxFrames = 36;
+      const drops = [];
+
+      function step() {
+        frame++;
+        ctx.clearRect(0, 0, W, H);
+
+        // De 16-bit veer vliegt vanuit het inktpotje rechtsonder (105, 140) in 3 schrijf-bogen over het perkament!
+        const progress = frame / maxFrames;
+        const lineY = 22 + progress * 92;
+        const sweepX = 18 + (Math.sin(progress * Math.PI * 5) * 0.5 + 0.5) * 82;
+
+        if (frame % 3 === 0) {
+          playQuillScratch();
+          drops.push({
+            x: sweepX,
+            y: lineY,
+            life: 14,
+            col: frame % 6 === 0 ? '#8E3E35' : '#5E432C'
+          });
+        }
+
+        // Teken achterblijvende 16-bit inkt-vonkjes op de regels
+        for (let i = drops.length - 1; i >= 0; i--) {
+          const dr = drops[i];
+          ctx.fillStyle = dr.col;
+          ctx.fillRect(Math.floor(dr.x), Math.floor(dr.y), 2, 1);
+          dr.life--;
+          if (dr.life <= 0) drops.splice(i, 1);
+        }
+
+        // Teken de zwiepende 16-bit ganzenveer zelf op (sweepX, lineY)
+        const qx0 = Math.floor(sweepX), qy0 = Math.floor(lineY);
+        for (let s = 0; s < 16; s++) {
+          const px = qx0 + Math.floor(s * 0.7);
+          const py = qy0 - s;
+          ctx.fillStyle = s < 3 ? '#281C13' : '#F2E6D0';
+          ctx.fillRect(px, py, 1, 1);
+          if (s > 4) {
+            for (let fw = 1; fw < 4; fw++) {
+              ctx.fillStyle = (s % 2 === 0) ? '#D8C5A6' : '#A68E6E';
+              ctx.fillRect(px - fw, py, 1, 1);
+            }
+          }
+        }
+
+        if (frame < maxFrames) {
+          requestAnimationFrame(step);
+        } else {
+          ctx.clearRect(0, 0, W, H);
+          if (onComplete) onComplete();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    async function redigeerMetVeertje() {
+      const inputEl = document.getElementById('braindump-input');
+      const raw = inputEl.value.trim();
+      if (!raw) {
+        playWoodTouch('paper');
+        showToast('Spreek of schrijf eerst een gedachte, tik daarna op het veertje om hem op te schonen');
+        inputEl.focus();
+        return;
+      }
+
+      if (wantListening) toggleSpeech();
+      previousScrollText = raw;
+
+      // Start meteen de 16-bit veer-animatie over het perkament!
+      let polishedPromise = Promise.resolve(localPolishDutchText(raw));
+      if (state.claudeKey) {
+        polishedPromise = polishWithClaude(raw).catch(() => localPolishDutchText(raw));
+      }
+
+      runQuillSweepAnimation(async () => {
+        const result = await polishedPromise;
+        if (result) {
+          inputEl.value = result;
+          document.getElementById('scroll-undo-btn').classList.add('visible');
+          playBellChime();
+          showToast('✒ Tekst opgeschoond door het veertje');
+        }
+      });
+    }
+
+    async function polishWithClaude(rawText) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': state.claudeKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-haiku-latest',
+          max_tokens: 450,
+          system: 'Je bent Gerwalds persoonlijke redacteur-veer. Redigeer zijn ruwe ingesproken of getypte notitie tot helder, natuurlijk Nederlands in zijn eigen directe stem. Haal spreektaal-herhalingen, gestamel en vulwoorden weg, maar voeg geen AI-clichés toe. Geef ALLEEN de geredigeerde tekst terug.',
+          messages: [{ role: 'user', content: rawText }]
+        })
+      });
+      if (!res.ok) return localPolishDutchText(rawText);
+      const data = await res.json();
+      return (data.content?.[0]?.text || '').trim() || localPolishDutchText(rawText);
+    }
+
+    // =========================================================================
+    // 5. DATA, UNDO-STACK & INSTELLINGEN
     // =========================================================================
     const DAYS = ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO'];
     const DAY_FILE_NAMES = {
@@ -1685,22 +2071,22 @@
         bron: 'Werkplaats',
         datum: 'Vandaag',
         gmail: '',
-        samenvatting: 'Vul eenmalig je GitHub repository en token in bij ⚙ om je echte briefjes uit +/kladblok.md op te halen.',
-        stappen: ['Tik rechtsboven op ⚙', 'Vul je repo en token in en tik op Haal kladblok op'],
+        samenvatting: 'Vul eenmalig je GitHub token in bij ⚙ (de app vindt je kluis-repo automatisch!) om je echte briefjes uit +/kladblok.md op te halen.',
+        stappen: ['Tik rechtsboven op ⚙', 'Plak je GitHub token en tik op Koppel & Haal op'],
         jouw_zet: 'Tik rechtsboven op ⚙ om je eigen briefjes uit Obsidian te laden.'
       },
       {
         id: 'welkom-2',
-        shortTitle: 'Voorbeeld: Nieuwe gedachte prikken',
-        title: 'Voorbeeld: Spreek iets in bij Uit je hoofd en prik het op dit bord',
+        shortTitle: 'Probeer het veertje & het vuur',
+        title: 'Spreek iets in, tik op het veertje om te redigeren, of verbrand dit briefje met Weg',
         warm: true,
         dag: '',
         bron: 'Voorbeeld',
         datum: 'Vandaag',
         gmail: '',
-        samenvatting: 'Alles wat je bij Uit je hoofd inspreekt of typt kun je direct hier op het bord prikken of naar je Boek sturen.',
+        samenvatting: 'Als je dit briefje opent en rechtsonder op 🔥 Weg tikt, zie je hem in 16-bit vlammen opgaan.',
         stappen: [],
-        jouw_zet: 'Probeer het lakzegel hieronder uit om dit voorbeeldbriefje af te ronden.'
+        jouw_zet: 'Tik hieronder op 🔥 Weg om het 16-bit verbrandings-ritueel te zien.'
       },
       {
         id: 'welkom-3',
@@ -1727,7 +2113,7 @@
       celebrationCounter: 0,
       quillSoundOn: true,
       uiSoundOn: true,
-      foldMode: 'auto', // 'auto' | 'diptych' | 'single'
+      foldMode: 'auto',
       ghRepo: '',
       ghToken: '',
       claudeKey: ''
@@ -1836,7 +2222,7 @@
     }
 
     // =========================================================================
-    // 5. UI RENDERING
+    // 6. UI RENDERING
     // =========================================================================
     function switchTab(tabNum) {
       playWoodTouch('wood');
@@ -2053,7 +2439,7 @@
     }
 
     // =========================================================================
-    // 6. DE 4 WISSELENDE 16-BIT LAKZEGEL-VIERINGEN
+    // 7. DE 4 LAKZEGEL-VIERINGEN + HET 16-BIT VERBRANDINGS-RITUEEL BIJ 'WEG'!
     // =========================================================================
     function toggleSealMode() {
       state.sealMode = !state.sealMode;
@@ -2163,21 +2549,106 @@
       requestAnimationFrame(step);
     }
 
+    /**
+     * 16-bit Verbrandings-ritueel als je een briefje wegdoet met 'Weg':
+     * Het perkament vat van onderaf vlam (gloeiende sintels, zwarte verkoolde rand,
+     * opstijgende vonkjes en rook) en vervliegt tot as!
+     */
+    function run16BitBurnAnimation(onDone) {
+      const c = document.getElementById('celebration-canvas');
+      const W = 130, H = 276;
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+
+      let frame = 0;
+      const maxFrames = 44;
+      const embers = Array.from({ length: 42 }, () => ({
+        x: 18 + Math.random() * (W - 36),
+        y: H * 0.72 + Math.random() * 30,
+        vx: (Math.random() - 0.5) * 1.4,
+        vy: -1.6 - Math.random() * 2.4,
+        smoke: Math.random() > 0.58
+      }));
+
+      function step() {
+        frame++;
+        ctx.clearRect(0, 0, W, H);
+
+        const p = frame / maxFrames;
+        // De brandlijn vreet van y = 215 omhoog naar y = 30
+        const burnLineY = Math.floor(215 - p * 195);
+
+        for (let x = 14; x < W - 14; x++) {
+          const jag = Math.floor(Math.sin(x * 0.35 + frame * 0.45) * 5 + smoothNoise(x * 0.2, frame * 0.2) * 8);
+          const fy = burnLineY + jag;
+
+          // Nog niet verbrand stukje perkament boven de vlammenlijn (alleen zichtbaar tijdens het opbranden)
+          if (p < 0.85) {
+            for (let y = Math.max(32, fy - 18); y < fy; y++) {
+              ctx.fillStyle = y > fy - 4 ? '#5E3E26' : 'rgba(180, 159, 128, 0.55)';
+              ctx.fillRect(x, y, 1, 1);
+            }
+          }
+
+          // De gloeiende verkolingsrand + 16-bit vlammetjes
+          for (let dy = -3; dy <= 10; dy++) {
+            const py = fy + dy;
+            if (py < 24 || py >= H - 20) continue;
+            if (dy < 0) {
+              ctx.fillStyle = '#E2B468'; // Helder beige-oranje vlamtopje
+            } else if (dy < 3) {
+              ctx.fillStyle = '#C85A28'; // Sintels / vuuroranje
+            } else if (dy < 6) {
+              ctx.fillStyle = '#7A2818'; // Donker bruinrood gloeiend kooltje
+            } else {
+              ctx.fillStyle = '#18100C'; // Verkoolde zwarte as-rand
+            }
+            ctx.fillRect(x, py, 1, 1);
+          }
+        }
+
+        // Opstijgende vonkjes en rookpluimpjes
+        embers.forEach((e) => {
+          e.x += e.vx + Math.sin(frame * 0.2 + e.y * 0.1) * 0.3;
+          e.y += e.vy;
+          if (e.y < burnLineY - 45) {
+            e.y = burnLineY + Math.random() * 12;
+            e.x = 18 + Math.random() * (W - 36);
+          }
+          ctx.fillStyle = e.smoke ? 'rgba(60, 48, 40, 0.65)' : (Math.random() > 0.4 ? '#D96B27' : '#E2C488');
+          ctx.fillRect(Math.floor(e.x), Math.floor(e.y), e.smoke ? 3 : 2, e.smoke ? 3 : 2);
+        });
+
+        if (frame < maxFrames) {
+          requestAnimationFrame(step);
+        } else {
+          ctx.clearRect(0, 0, W, H);
+          if (onDone) onDone();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
     function deleteCurrentNote() {
       const idx = state.notes.findIndex((n) => n.id === state.selectedNoteId);
       if (idx === -1) return;
       const note = state.notes[idx];
-      pushUndoSnapshot(`"${note.shortTitle || note.title}" weggegooid`);
+      pushUndoSnapshot(`"${note.shortTitle || note.title}" uit de as herrezen`);
       state.notes.splice(idx, 1);
-      playWoodTouch('paper');
+
+      playFireCrackleSound();
       saveLocalState();
-      syncToGitHubIfConfigured(`Verwijderd: ${note.title}`);
-      showToast('Weggelegd (tik ↶ Terug om terug te halen)');
-      switchTab(2);
+      syncToGitHubIfConfigured(`Verbrand/verwijderd: ${note.title}`);
+      showToast('🔥 Briefje in vlammen opgegaan (tik ↶ Terug als je spijt hebt)');
+
+      run16BitBurnAnimation(() => {
+        switchTab(2);
+      });
     }
 
     // =========================================================================
-    // 7. MIJMER-SPRAAKHERKENNING (BLIJFT HANGEN BIJ ADEMHALEN & GEEN HERHALING!)
+    // 8. MIJMER-SPRAAKHERKENNING (BLIJFT HANGEN BIJ ADEMHALEN & GEEN HERHALING!)
     // =========================================================================
     const inputEl = document.getElementById('braindump-input');
     const interimEl = document.getElementById('speech-interim-preview');
@@ -2188,12 +2659,9 @@
     });
 
     let recognition = null;
-    let wantListening = false; // Blijft true tijdens adempauzes/mijmeren tot Gerwald zelf op Stop tikt!
+    let wantListening = false;
     let lastCommittedChunk = '';
 
-    /**
-     * Voegt een nieuwe uitgesproken zin samen met de bestaande tekst ZONDER Android-Chrome herhalingen.
-     */
     function appendSpokenChunkCleanly(newChunk) {
       const clean = newChunk.trim();
       if (!clean) return;
@@ -2206,7 +2674,6 @@
         return;
       }
 
-      // Check of Android Chrome de vorige zin opnieuw aan het begin van dit blok heeft geplakt
       if (clean.toLowerCase().startsWith(lastCommittedChunk.toLowerCase()) && lastCommittedChunk.length > 3) {
         const delta = clean.slice(lastCommittedChunk.length).trim();
         if (delta) {
@@ -2216,7 +2683,6 @@
         return;
       }
 
-      // Check op woord-overlap aan het einde van wat er al staat
       const curWords = current.split(/\s+/);
       const newWords = clean.split(/\s+/);
       let maxOverlap = 0;
@@ -2270,8 +2736,6 @@
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
       recognition.lang = 'nl-NL';
-      // Op Android voorkomt continuous=false de beruchte woord-verdubbeling,
-      // en door in onend automatisch opnieuw te starten kun je rustig ademhalen en mijmeren!
       recognition.continuous = false;
       recognition.interimResults = true;
 
@@ -2309,7 +2773,6 @@
         }
         interimEl.textContent = '';
 
-        // Als Gerwald nog NIET op Stop heeft getikt, blijven we rustig wachten terwijl hij mijmert!
         if (wantListening) {
           setTimeout(() => {
             if (wantListening) {
@@ -2365,6 +2828,8 @@
 
       state.notes.unshift(newNote);
       inputEl.value = '';
+      previousScrollText = '';
+      document.getElementById('scroll-undo-btn').classList.remove('visible');
       saveLocalState();
 
       syncToGitHubIfConfigured(`Nieuw briefje: ${title}`);
@@ -2379,6 +2844,7 @@
       }
       if (wantListening) toggleSpeech();
       playBookChord();
+      launchMessengerBird(); // Laat de 16-bit postduif/raaf over het meer wegvliegen!
       run16BitCelebration(0);
 
       const today = new Date().toISOString().slice(0, 10);
@@ -2388,15 +2854,17 @@
       const mdContent = `---\ntype: boek-inworp\ndatum: ${today}\nbron: werkplaats-mobiel\ndoor: gerwald\n---\n\n# ${firstWords}\n\n${raw}\n`;
 
       inputEl.value = '';
+      previousScrollText = '';
+      document.getElementById('scroll-undo-btn').classList.remove('visible');
 
       if (state.ghRepo && state.ghToken) {
         await putGitHubFile(filePath, mdContent, `Boek-inworp: ${firstWords}`);
       }
-      showToast(`Naar Survival Gids gestuurd: "${firstWords}"`);
+      showToast(`🕊 Postduif onderweg naar Survival Gids: "${firstWords}"`);
     }
 
     // =========================================================================
-    // 8. DAG-MODAL & AFGEROND KIST
+    // 9. DAG-MODAL & AFGEROND KIST
     // =========================================================================
     function openDayModal(dayCode) {
       playWoodTouch('wood');
@@ -2475,7 +2943,7 @@
     }
 
     // =========================================================================
-    // 9. GITHUB & CLAUDE API SYNCHRONISATIE
+    // 10. BACKOFFICE: GITHUB AUTO-DETECTIE & CLAUDE API SYNCHRONISATIE
     // =========================================================================
     function serializeKladblokMarkdown() {
       const lines = ['# Kladblok', ''];
@@ -2569,13 +3037,45 @@
       } catch (_) {}
     }
 
+    /**
+     * Als Gerwald alleen zijn GitHub token invult, zoekt deze functie automatisch
+     * tussen zijn eigen GitHub repositories welke kluis het bestand '+/kladblok.md' bevat!
+     */
+    async function autoDetectVaultRepo(token) {
+      const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' };
+      const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', { headers });
+      if (!res.ok) return null;
+      const repos = await res.json();
+      for (const r of repos) {
+        if (r.name === 'werkplaats-mobiel') continue;
+        const check = await fetch(`https://api.github.com/repos/${r.full_name}/contents/+%2Fkladblok.md`, { headers });
+        if (check.ok) return r.full_name;
+      }
+      return null;
+    }
+
     async function pullFromGitHub() {
       state.ghRepo = document.getElementById('cfg-gh-repo').value.trim();
       state.ghToken = document.getElementById('cfg-gh-token').value.trim();
-      if (!state.ghRepo || !state.ghToken) {
-        showToast('Vul eerst je GitHub repo en token in');
+      state.claudeKey = document.getElementById('cfg-claude-key').value.trim();
+
+      if (!state.ghToken) {
+        showToast('Plak eerst je GitHub Token');
         return;
       }
+
+      if (!state.ghRepo) {
+        showToast('Zoekt automatisch naar je Obsidian-kluis op GitHub...');
+        const detected = await autoDetectVaultRepo(state.ghToken);
+        if (detected) {
+          state.ghRepo = detected;
+          document.getElementById('cfg-gh-repo').value = detected;
+        } else {
+          showToast('Vul ook de naam van je kluis-repo in');
+          return;
+        }
+      }
+
       saveLocalState();
       try {
         const res = await fetch(`https://api.github.com/repos/${state.ghRepo}/contents/+%2Fkladblok.md`, {
@@ -2588,9 +3088,10 @@
         saveLocalState();
         renderBoard();
         closeSettingsModal();
-        showToast('Kladblok opgehaald van GitHub');
+        playBellChime();
+        showToast(`Kladblok geladen uit ${state.ghRepo}`);
       } catch (e) {
-        showToast('Kon niet ophalen: controleer repo en token');
+        showToast('Kon +/kladblok.md niet vinden: controleer repo en token');
       }
     }
 
@@ -2697,6 +3198,10 @@
     renderBoard();
     fetchAlkmaarWeather();
     setInterval(drawLakeFrame, 55);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
   </script>
 </body>
 </html>
