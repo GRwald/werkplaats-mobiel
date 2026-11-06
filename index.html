@@ -17,7 +17,6 @@
       --wood-dark: #1C140F;
       --oxblood: #4E221D;
       --beige-hi: #BAA484;
-      --beige-text: #CEBMA0;
       --beige-soft: #B8A487;
       --beige-muted: #7E6B56;
       --ink-dark: #281C13;
@@ -47,16 +46,83 @@
     #app-shell {
       position: relative;
       width: 100%;
-      max-width: 412px;
+      max-width: 420px;
       height: 100dvh;
-      max-height: 880px;
+      max-height: 900px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
+      transition: max-width 0.2s ease;
     }
 
-    @media (min-width: 440px) {
+    /* ==========================================================================
+       HONOR MAGIC V3 / FOLD KLAPSCHERM MODUS (OPENGEKLAPT TWEELUIK!)
+       Op een opengeklapt Fold-scherm (600px–960px breed) of als Tweeluik aan staat,
+       ligt de schrijfkist open: links Uit je hoofd, rechts Het Bord naast elkaar!
+       ========================================================================== */
+    @media (min-width: 580px) and (max-width: 980px) {
+      #app-shell.fold-auto {
+        max-width: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+        border: none;
+      }
+      #app-shell.fold-auto .panels-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1.12fr;
+        gap: 14px;
+        position: relative;
+      }
+      /* Messing scharnier-naad in het midden van het klapscherm */
+      #app-shell.fold-auto .panels-wrapper::after {
+        content: '';
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: calc(47.2% - 1px);
+        width: 3px;
+        background: linear-gradient(180deg,
+          #2A1C12 0%, #6E563B 15%, #1A110B 30%,
+          #6E563B 50%, #1A110B 70%, #6E563B 85%, #2A1C12 100%);
+        box-shadow: -2px 0 6px rgba(0,0,0,0.7), 2px 0 6px rgba(0,0,0,0.7);
+        pointer-events: none;
+      }
+      #app-shell.fold-auto #screen-1,
+      #app-shell.fold-auto #screen-2 {
+        display: flex !important;
+      }
+      #app-shell.fold-auto.detail-open #screen-2 {
+        display: none !important;
+      }
+      #app-shell.fold-auto.detail-open #screen-3 {
+        display: flex !important;
+      }
+    }
+
+    /* Handmatige Tweeluik-modus (ook te testen op desktop of geforceerd op Fold) */
+    #app-shell.force-diptych {
+      max-width: 860px;
+    }
+    #app-shell.force-diptych .panels-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1.12fr;
+      gap: 14px;
+      position: relative;
+    }
+    #app-shell.force-diptych #screen-1,
+    #app-shell.force-diptych #screen-2 {
+      display: flex !important;
+    }
+    #app-shell.force-diptych.detail-open #screen-2 {
+      display: none !important;
+    }
+    #app-shell.force-diptych.detail-open #screen-3 {
+      display: flex !important;
+    }
+
+    @media (min-width: 981px) {
       #app-shell {
         height: 94dvh;
         border-radius: 22px;
@@ -64,7 +130,6 @@
       }
     }
 
-    /* Doorlopend 16-bit notenhout op de achtergrond */
     #wood-bg-canvas {
       position: absolute;
       inset: 0;
@@ -75,7 +140,6 @@
       pointer-events: none;
     }
 
-    /* 16-bit Lakzegel-viering overlay */
     #celebration-canvas {
       position: absolute;
       inset: 0;
@@ -93,12 +157,19 @@
       flex-direction: column;
       width: 100%;
       height: 100%;
-      padding: 12px 14px 14px;
-      gap: 10px;
+      padding: 10px 13px 12px;
+      gap: 9px;
+    }
+
+    .panels-wrapper {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ==========================================================================
-       ZACHTERE, MINDER "KNOPPERIGE" HOUT-ELEMENTEN (AFGESCHUIND PIXEL-HOUT)
+       ZACHTE HOUT-ELEMENTEN
        ========================================================================== */
     .wood-slot {
       background: rgba(16, 11, 8, 0.65);
@@ -164,9 +235,6 @@
       color: #1E140D;
     }
 
-    /* ==========================================================================
-       BOVENSTE BALK (RUSTIG IN HET HOUT VERZONKEN)
-       ========================================================================== */
     .top-bar {
       display: grid;
       grid-template-columns: 1fr 1fr auto;
@@ -176,7 +244,7 @@
     }
 
     .tab-btn {
-      height: 40px;
+      height: 38px;
       font-family: 'Merriweather', serif;
       font-size: 11.5px;
       font-weight: 700;
@@ -188,9 +256,9 @@
 
     .icon-btn {
       width: 38px;
-      height: 40px;
+      height: 38px;
       font-size: 14px;
-      opacity: 0.75;
+      opacity: 0.78;
     }
 
     .screen {
@@ -198,7 +266,7 @@
       flex-direction: column;
       flex: 1;
       min-height: 0;
-      gap: 10px;
+      gap: 9px;
     }
 
     .screen.active {
@@ -206,11 +274,12 @@
     }
 
     /* ==========================================================================
-       SCHERM 1: UIT JE HOOFD (PUUR RAAM + PERKAMENTROL ZONDER META-TEKST)
+       SCHERM 1: UIT JE HOOFD
        ========================================================================== */
     .window-frame {
       position: relative;
-      height: 112px;
+      height: 104px;
+      min-height: 68px;
       flex-shrink: 0;
       padding: 5px;
       border-radius: 6px;
@@ -219,6 +288,20 @@
       box-shadow:
         inset 0 1px 0 rgba(196, 174, 140, 0.2),
         0 3px 8px rgba(0, 0, 0, 0.55);
+    }
+
+    /* Als het toetsenbord op Android omhoog klapt, maak het raampje iets compacter maar behoud de verhouding */
+    @media (max-height: 560px) {
+      .window-frame {
+        height: 68px;
+      }
+      .scroll-footer {
+        min-height: 54px !important;
+      }
+      #spreek-btn {
+        width: 52px !important;
+        height: 52px !important;
+      }
     }
 
     .window-sponning {
@@ -241,7 +324,6 @@
       image-rendering: pixelated;
     }
 
-    /* Perkamentrol tussen twee gedraaide houten rolstokken */
     .scroll-assembly {
       flex: 1;
       min-height: 0;
@@ -251,7 +333,7 @@
     }
 
     .scroll-roller {
-      height: 12px;
+      height: 11px;
       width: 100%;
       flex-shrink: 0;
       border-radius: 4px;
@@ -273,14 +355,13 @@
     .scroll-body {
       flex: 1;
       min-height: 0;
-      margin: 0 9px;
+      margin: 0 8px;
       position: relative;
       display: flex;
       flex-direction: column;
-      padding: 16px 18px 14px;
+      padding: 14px 16px 12px;
       border-left: 1px solid #5C4833;
       border-right: 1px solid #4E3C2A;
-      /* Gedempt, warm oud papier (niet fel of wit) */
       background-color: #B49F80;
       background-image:
         linear-gradient(180deg,
@@ -306,8 +387,18 @@
     }
 
     #braindump-input::placeholder {
-      color: rgba(42, 30, 20, 0.48);
+      color: rgba(42, 30, 20, 0.45);
       font-style: italic;
+    }
+
+    /* Live mijmer-regel tijdens spraakherkenning zodat nog niet afgeronde zinnen niet dubbel typen */
+    #speech-interim-preview {
+      font-family: 'Merriweather', serif;
+      font-size: 13.5px;
+      font-style: italic;
+      color: #5E3A24;
+      min-height: 0;
+      padding-top: 2px;
     }
 
     .scroll-footer {
@@ -316,12 +407,12 @@
       justify-content: center;
       position: relative;
       padding-top: 4px;
-      min-height: 78px;
+      min-height: 74px;
     }
 
     #spreek-btn {
-      width: 70px;
-      height: 70px;
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
       border: 2px solid #867052;
       background: radial-gradient(circle at 35% 30%, #642D26 0%, #4B201B 62%, #341512 100%);
@@ -346,9 +437,9 @@
     #spreek-btn.listening {
       box-shadow:
         0 0 0 3px #B8A282,
-        0 0 16px rgba(130, 56, 46, 0.7),
+        0 0 18px rgba(130, 56, 46, 0.75),
         inset 0 2px 4px rgba(240, 220, 185, 0.5);
-      animation: pulse-wax 1.1s infinite alternate;
+      animation: pulse-wax 1.4s infinite alternate ease-in-out;
     }
 
     @keyframes pulse-wax {
@@ -360,8 +451,8 @@
       position: absolute;
       right: 2px;
       bottom: 2px;
-      width: 44px;
-      height: 54px;
+      width: 42px;
+      height: 52px;
       image-rendering: pixelated;
       pointer-events: none;
       opacity: 0.9;
@@ -370,12 +461,12 @@
     .bottom-actions-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 9px;
       flex-shrink: 0;
     }
 
     .action-big-btn {
-      height: 56px;
+      height: 52px;
       padding: 4px 10px;
       font-family: 'Merriweather', serif;
       font-size: 12.5px;
@@ -384,7 +475,7 @@
     }
 
     /* ==========================================================================
-       SCHERM 2: HET BORD (SUBTIEL HOUTSNIJWERK IN ACHTERGROND + ORGANISCHE BRIEFJES)
+       SCHERM 2: HET BORD
        ========================================================================== */
     .board-surface {
       flex: 1;
@@ -400,7 +491,6 @@
       flex-direction: column;
     }
 
-    /* Canvas voor het eikenhouten bord met warm/koel lichtval & subtiel houtsnijwerk */
     #board-wood-canvas {
       position: absolute;
       inset: 0;
@@ -417,10 +507,10 @@
       flex: 1;
       min-height: 0;
       overflow-y: auto;
-      padding: 28px 10px 14px;
+      padding: 26px 10px 14px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
 
     .board-scroll-area::-webkit-scrollbar {
@@ -431,7 +521,6 @@
       border-radius: 2px;
     }
 
-    /* 2-koloms prikbord-veld waarin briefjes als losse perkamentjes hangen (geen brede balken!) */
     .parchment-cluster {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -439,7 +528,6 @@
       align-items: start;
     }
 
-    /* Elk briefje heeft een eigen 16-bit gekartelde perkament-achtergrond op canvas */
     .parchment-scrap {
       position: relative;
       padding: 13px 11px 11px;
@@ -512,13 +600,11 @@
       color: #3E2B1C;
     }
 
-    /* Subtiele scheidingsruimte tussen Zeker Belangrijk (boven) en Lekker Belangrijk (onder) */
     .carved-zone-spacer {
       height: 22px;
       flex-shrink: 0;
     }
 
-    /* Onderste balk op het bord: Lakzegel, Ongedaan maken (Undo) & Luik */
     .board-tools-row {
       display: flex;
       gap: 7px;
@@ -528,7 +614,7 @@
 
     .seal-mode-btn {
       flex: 1;
-      height: 46px;
+      height: 44px;
       flex-direction: row;
       justify-content: center;
       padding: 0 10px;
@@ -547,7 +633,7 @@
     }
 
     .undo-btn {
-      height: 46px;
+      height: 44px;
       padding: 0 11px;
       font-size: 11.5px;
       font-weight: 700;
@@ -590,7 +676,7 @@
     }
 
     /* ==========================================================================
-       SCHERM 3: OPEN BRIEFJE (MET BEIGE 'JOUW ZET' & DIRECTE DOE-KNOP)
+       SCHERM 3: OPEN BRIEFJE
        ========================================================================== */
     .open-card-scroll {
       flex: 1;
@@ -603,7 +689,7 @@
       flex: 1;
       min-height: 0;
       overflow-y: auto;
-      margin: 0 9px;
+      margin: 0 8px;
       padding: 14px 16px;
       border-left: 1px solid #5C4833;
       border-right: 1px solid #4E3C2A;
@@ -687,7 +773,6 @@
       color: #2C2016;
     }
 
-    /* De DOE-KNOP op een briefje (opent mail of zet direct in actiestand) */
     #detail-doe-btn {
       height: 44px;
       font-family: 'Merriweather', serif;
@@ -711,7 +796,7 @@
     }
 
     /* ==========================================================================
-       MODALS (DAG-SPEELBORD EN INSTELLINGEN)
+       MODALS
        ========================================================================== */
     .modal-backdrop {
       position: absolute;
@@ -730,7 +815,8 @@
 
     .modal-box {
       width: 100%;
-      max-height: 84%;
+      max-width: 400px;
+      max-height: 86%;
       overflow-y: auto;
       background: #241912;
       border: 1px solid #6E563E;
@@ -785,6 +871,16 @@
       gap: 8px;
     }
 
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(110, 86, 62, 0.25);
+      font-size: 12px;
+      color: #D8C6AA;
+    }
+
     #toast {
       position: absolute;
       left: 20px;
@@ -813,7 +909,7 @@
   </style>
 </head>
 <body>
-  <div id="app-shell">
+  <div id="app-shell" class="fold-auto">
     <canvas id="wood-bg-canvas"></canvas>
     <canvas id="celebration-canvas"></canvas>
 
@@ -831,128 +927,124 @@
         </button>
       </div>
 
-      <!-- ====================================================================
-           SCHERM 1: UIT JE HOOFD (GEEN META-TEKSTEN, PUUR RAAM & PERKAMENT)
-           ==================================================================== -->
-      <div id="screen-1" class="screen active">
-        <div class="window-frame">
-          <div class="window-sponning">
-            <canvas id="lake-canvas" width="180" height="54"></canvas>
+      <div class="panels-wrapper">
+        <!-- ==================================================================
+             SCHERM 1: UIT JE HOOFD
+             ================================================================== -->
+        <div id="screen-1" class="screen active">
+          <div class="window-frame">
+            <div class="window-sponning">
+              <canvas id="lake-canvas" width="180" height="54"></canvas>
+            </div>
+          </div>
+
+          <div class="scroll-assembly">
+            <div class="scroll-roller"></div>
+            <div class="scroll-body">
+              <textarea
+                id="braindump-input"
+                placeholder="Schrijf of spreek uit wat er in je hoofd zit..."
+              ></textarea>
+              <div id="speech-interim-preview"></div>
+              <div class="scroll-footer">
+                <button id="spreek-btn" onclick="toggleSpeech()">
+                  <span id="spreek-label">Spreek</span>
+                </button>
+                <canvas id="quill-canvas" class="quill-illust" width="24" height="29"></canvas>
+              </div>
+            </div>
+            <div class="scroll-roller"></div>
+          </div>
+
+          <div class="bottom-actions-2col">
+            <button class="wood-token token-oak action-big-btn" onclick="prikOpBord()">
+              Prik op bord
+            </button>
+            <button class="wood-token token-olive action-big-btn" onclick="stuurNaarBoek()">
+              Naar boek
+            </button>
           </div>
         </div>
 
-        <div class="scroll-assembly">
-          <div class="scroll-roller"></div>
-          <div class="scroll-body">
-            <textarea
-              id="braindump-input"
-              placeholder="Schrijf of spreek uit wat er in je hoofd zit..."
-            ></textarea>
-            <div class="scroll-footer">
-              <button id="spreek-btn" onclick="toggleSpeech()">
-                <span id="spreek-label">Spreek</span>
+        <!-- ==================================================================
+             SCHERM 2: HET BORD
+             ================================================================== -->
+        <div id="screen-2" class="screen">
+          <div id="quest-board" class="board-surface">
+            <canvas id="board-wood-canvas"></canvas>
+
+            <div class="board-scroll-area">
+              <div id="warm-notes-cluster" class="parchment-cluster"></div>
+              <div id="carved-divider-anchor" class="carved-zone-spacer"></div>
+              <div id="cool-notes-cluster" class="parchment-cluster"></div>
+            </div>
+          </div>
+
+          <div class="board-tools-row">
+            <button id="seal-mode-btn" class="wood-token token-oxblood seal-mode-btn" onclick="toggleSealMode()">
+              <canvas id="stamp-icon-1" width="20" height="20" style="width:24px;height:24px;image-rendering:pixelated;"></canvas>
+              <span id="seal-mode-title">Lakzegel</span>
+            </button>
+            <button id="undo-btn" class="wood-token token-beige undo-btn" onclick="undoLastAction()" title="Zet je laatste actie terug">
+              <span>↶ Terug</span>
+            </button>
+            <button class="wood-token token-cool" style="height:44px;padding:0 12px;font-size:11.5px;font-weight:700;" onclick="showAfgerondLog()">
+              <span>Kist</span>
+            </button>
+          </div>
+
+          <div class="wood-slot days-tray" id="board-days-tray"></div>
+        </div>
+
+        <!-- ==================================================================
+             SCHERM 3: OPEN BRIEFJE
+             ================================================================== -->
+        <div id="screen-3" class="screen">
+          <div class="scroll-assembly open-card-scroll">
+            <div class="scroll-roller"></div>
+            <div class="open-card-body">
+              <div class="top-nail"></div>
+              <h2 id="detail-title"></h2>
+
+              <div class="jouw-zet-box">
+                <div class="jouw-zet-label">JOUW ZET</div>
+                <div id="detail-jouw-zet" contenteditable="true" spellcheck="false"></div>
+              </div>
+
+              <button id="detail-doe-btn" class="wood-token token-oxblood" onclick="triggerDoeAction()">
+                <span id="detail-doe-label">Nu doen</span>
               </button>
-              <canvas id="quill-canvas" class="quill-illust" width="24" height="29"></canvas>
+
+              <button class="history-toggle-btn" onclick="toggleHistoryDetails()">
+                <span id="detail-history-label">+ Achtergrond & voorgeschiedenis</span>
+              </button>
+              <div id="detail-history-box"></div>
+
+              <div class="warm-cool-switch" onclick="toggleCurrentNoteWeight()">
+                <span id="weight-warm-lbl">● Zeker belangrijk</span>
+                <span>·</span>
+                <span id="weight-cool-lbl">○ Lekker belangrijk</span>
+              </div>
             </div>
+            <div class="scroll-roller"></div>
           </div>
-          <div class="scroll-roller"></div>
-        </div>
 
-        <div class="bottom-actions-2col">
-          <button class="wood-token token-oak action-big-btn" onclick="prikOpBord()">
-            Prik op bord
-          </button>
-          <button class="wood-token token-olive action-big-btn" onclick="stuurNaarBoek()">
-            Naar boek
-          </button>
-        </div>
-      </div>
+          <div class="wood-slot days-tray" id="detail-days-tray"></div>
 
-      <!-- ====================================================================
-           SCHERM 2: HET BORD (SUBTIEL HOUTSNIJWERK IN HET HOUT + LOSSE BRIEFJES)
-           ==================================================================== -->
-      <div id="screen-2" class="screen">
-        <div id="quest-board" class="board-surface">
-          <!-- 16-bit Eikenhouten planken + subtiel ingekerfd 'zeker belangrijk' & 'lekker belangrijk' -->
-          <canvas id="board-wood-canvas"></canvas>
-
-          <div class="board-scroll-area">
-            <!-- Bovenste zone: Warm houtlicht (zeker belangrijk in het hout gekerfd) -->
-            <div id="warm-notes-cluster" class="parchment-cluster"></div>
-
-            <!-- Overgang naar Koel schaduwhout (lekker belangrijk in het hout gekerfd) -->
-            <div id="carved-divider-anchor" class="carved-zone-spacer"></div>
-
-            <div id="cool-notes-cluster" class="parchment-cluster"></div>
-          </div>
-        </div>
-
-        <!-- Onderste gereedschapsrij: Lakzegel, Ongedaan maken (Undo) & Logboek -->
-        <div class="board-tools-row">
-          <button id="seal-mode-btn" class="wood-token token-oxblood seal-mode-btn" onclick="toggleSealMode()">
-            <canvas id="stamp-icon-1" width="20" height="20" style="width:24px;height:24px;image-rendering:pixelated;"></canvas>
-            <span id="seal-mode-title">Lakzegel</span>
-          </button>
-          <button id="undo-btn" class="wood-token token-beige undo-btn" onclick="undoLastAction()" title="Zet je laatste actie terug">
-            <span>↶ Terug</span>
-          </button>
-          <button class="wood-token token-cool" style="height:46px;padding:0 12px;font-size:11.5px;font-weight:700;" onclick="showAfgerondLog()">
-            <span>Kist</span>
-          </button>
-        </div>
-
-        <div class="wood-slot days-tray" id="board-days-tray"></div>
-      </div>
-
-      <!-- ====================================================================
-           SCHERM 3: OPEN BRIEFJE (MET DUIDELIJKE DOE-KNOP & DAG-KEUZE)
-           ==================================================================== -->
-      <div id="screen-3" class="screen">
-        <div class="scroll-assembly open-card-scroll">
-          <div class="scroll-roller"></div>
-          <div class="open-card-body">
-            <div class="top-nail"></div>
-            <h2 id="detail-title"></h2>
-
-            <div class="jouw-zet-box">
-              <div class="jouw-zet-label">JOUW ZET</div>
-              <div id="detail-jouw-zet" contenteditable="true" spellcheck="false"></div>
-            </div>
-
-            <!-- DE DOE-KNOP: opent direct de mail of start de actie -->
-            <button id="detail-doe-btn" class="wood-token token-oxblood" onclick="triggerDoeAction()">
-              <span id="detail-doe-label">Nu doen</span>
+          <div class="board-tools-row">
+            <button class="wood-token token-oxblood seal-mode-btn" style="height:48px;" onclick="stampCurrentNoteDone()">
+              <canvas id="stamp-icon-2" width="20" height="20" style="width:25px;height:25px;image-rendering:pixelated;"></canvas>
+              <span>Lakzegel erop (Klaar)</span>
             </button>
-
-            <button class="history-toggle-btn" onclick="toggleHistoryDetails()">
-              <span id="detail-history-label">+ Achtergrond & voorgeschiedenis</span>
+            <button class="wood-token token-cool" style="height:48px;padding:0 16px;font-family:'Merriweather',serif;font-size:12px;font-weight:700;" onclick="deleteCurrentNote()">
+              <span>Weg</span>
             </button>
-            <div id="detail-history-box"></div>
-
-            <div class="warm-cool-switch" onclick="toggleCurrentNoteWeight()">
-              <span id="weight-warm-lbl">● Zeker belangrijk</span>
-              <span>·</span>
-              <span id="weight-cool-lbl">○ Lekker belangrijk</span>
-            </div>
           </div>
-          <div class="scroll-roller"></div>
-        </div>
-
-        <div class="wood-slot days-tray" id="detail-days-tray"></div>
-
-        <div class="board-tools-row">
-          <button class="wood-token token-oxblood seal-mode-btn" style="height:50px;" onclick="stampCurrentNoteDone()">
-            <canvas id="stamp-icon-2" width="20" height="20" style="width:26px;height:26px;image-rendering:pixelated;"></canvas>
-            <span>Lakzegel erop (Klaar)</span>
-          </button>
-          <button class="wood-token token-cool" style="height:50px;padding:0 16px;font-family:'Merriweather',serif;font-size:12px;font-weight:700;" onclick="deleteCurrentNote()">
-            <span>Weg</span>
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- MODAL 1: DAG-SPEELBORD (MET KNOP OM TERUG OP HET BORD TE HANGEN OF TE OPENEN) -->
+    <!-- MODAL 1: DAG-SPEELBORD -->
     <div id="day-modal" class="modal-backdrop" onclick="if(event.target===this)closeDayModal()">
       <div class="modal-box">
         <div class="modal-title">
@@ -963,7 +1055,7 @@
       </div>
     </div>
 
-    <!-- MODAL 2: INSTELLINGEN (ONTWERP-OPTIES VOOR HET RAAMPJE & GITHUB SYNC) -->
+    <!-- MODAL 2: INSTELLINGEN (GELUID, FOLD-TWEELUIK, RAAM & GITHUB SYNC) -->
     <div id="settings-modal" class="modal-backdrop" onclick="if(event.target===this)closeSettingsModal()">
       <div class="modal-box">
         <div class="modal-title">
@@ -971,10 +1063,25 @@
           <button class="wood-token token-cool" style="padding:4px 10px;font-size:11px;" onclick="closeSettingsModal()">Sluit</button>
         </div>
 
+        <div style="padding:10px;background:#18110C;border:1px solid #483424;border-radius:6px;display:flex;flex-direction:column;gap:6px;">
+          <div class="toggle-row">
+            <span>Ganzenveer-tikgeluid bij schrijven</span>
+            <button id="toggle-quill-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleQuillSound()">Aan</button>
+          </div>
+          <div class="toggle-row">
+            <span>Hout- & papiergeluidjes bij aanraken</span>
+            <button id="toggle-ui-sound-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleUiSound()">Aan</button>
+          </div>
+          <div class="toggle-row" style="border-bottom:none;">
+            <span>Honor Fold Tweeluik (opengeklapt naast elkaar)</span>
+            <button id="toggle-fold-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="cycleFoldMode()">Auto</button>
+          </div>
+        </div>
+
         <div style="padding:10px;background:#18110C;border:1px solid #483424;border-radius:6px;font-size:11.5px;line-height:1.45;color:var(--beige-soft);">
-          <strong>Raampje sfeer (ontwerp-keuze):</strong>
+          <strong>Raampje sfeer:</strong>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="toggleWindowBrightness()">Wissel Gedempt / Helderder</button>
+            <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="toggleWindowBrightness()">Gedempt / Helderder</button>
             <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride(null)">Live Alkmaar</button>
             <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride('night')">Nacht</button>
             <button class="wood-token token-oak" style="padding:6px 10px;font-size:11px;" onclick="setWeatherOverride('day')">Dag</button>
@@ -984,7 +1091,7 @@
 
         <div>
           <label class="field-label">GitHub Repository</label>
-          <input id="cfg-gh-repo" class="pixel-input" placeholder="bijv. gerwald/ai-werkplaats" />
+          <input id="cfg-gh-repo" class="pixel-input" placeholder="bijv. GRwald/Ai-Werkplaats" />
         </div>
         <div>
           <label class="field-label">GitHub Token</label>
@@ -1011,7 +1118,7 @@
 
   <script>
     // =========================================================================
-    // 1. 16-BIT PIXEL & GELUIDS-ENGINE (P=2, 4x4 BAYER DITHER)
+    // 1. 16-BIT PIXEL & SUBTIELE AKOESTISCHE GELUIDS-ENGINE (GEEN DOFFE PIEP!)
     // =========================================================================
     const BAYER4 = [
       [ 0,  8,  2, 10],
@@ -1047,6 +1154,8 @@
     }
 
     let audioCtx = null;
+    let lastQuillTime = 0;
+
     function getAudio() {
       if (!audioCtx) {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -1056,46 +1165,63 @@
       return audioCtx;
     }
 
+    // Ganzenveer op perkament (kan uit in instellingen, en gedrosseld zodat hij nooit ratelt)
     function playQuillScratch() {
+      if (!state.quillSoundOn) return;
+      const nowMs = performance.now();
+      if (nowMs - lastQuillTime < 68) return;
+      lastQuillTime = nowMs;
+
       const ctx = getAudio();
       if (!ctx) return;
-      const dur = 0.03;
-      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const dur = 0.028;
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
       const data = buf.getChannelData(0);
       for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.45)) * 0.11;
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.42)) * 0.095;
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
       const filter = ctx.createBiquadFilter();
       filter.type = 'bandpass';
-      filter.frequency.value = 2500 + Math.random() * 500;
-      filter.Q.value = 3.0;
+      filter.frequency.value = 2400 + Math.random() * 550;
+      filter.Q.value = 2.8;
       src.connect(filter);
       filter.connect(ctx.destination);
       src.start();
     }
 
-    function playNailTap() {
+    /**
+     * Subtiele hout/papier-aanraking (GEEN oscillator-piep meer!):
+     * Korte, droge gefilterde ruis-tik van 16 ms met 3 subtiele klankkleuren
+     * ('wood', 'paper', 'pin') zodat klikken natuurlijk en rustig voelt.
+     */
+    function playWoodTouch(kind = 'wood') {
+      if (!state.uiSoundOn) return;
       const ctx = getAudio();
       if (!ctx) return;
-      const now = ctx.currentTime;
-      [175, 860].forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = idx === 0 ? 'triangle' : 'sine';
-        osc.frequency.setValueAtTime(freq, now);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.45, now + 0.08);
-        gain.gain.setValueAtTime(idx === 0 ? 0.22 : 0.06, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.085);
-      });
+      const dur = kind === 'paper' ? 0.032 : 0.018;
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const env = Math.exp(-i / (data.length * (kind === 'paper' ? 0.38 : 0.24)));
+        data[i] = (Math.random() * 2 - 1) * env * (kind === 'paper' ? 0.07 : 0.09);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = kind === 'paper'
+        ? (1800 + Math.random() * 300)
+        : (kind === 'pin' ? 1150 : 680 + Math.random() * 140);
+      filter.Q.value = kind === 'paper' ? 1.8 : 2.4;
+      src.connect(filter);
+      filter.connect(ctx.destination);
+      src.start();
     }
 
     function playBellChime() {
+      if (!state.uiSoundOn) return;
       const ctx = getAudio();
       if (!ctx) return;
       const now = ctx.currentTime;
@@ -1104,16 +1230,17 @@
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now + i * 0.055);
-        gain.gain.setValueAtTime(0.12, now + i * 0.055);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.42);
+        gain.gain.setValueAtTime(0.08, now + i * 0.055);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.38);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now + i * 0.055);
-        osc.stop(now + i * 0.055 + 0.45);
+        osc.stop(now + i * 0.055 + 0.4);
       });
     }
 
     function playBookChord() {
+      if (!state.uiSoundOn) return;
       const ctx = getAudio();
       if (!ctx) return;
       const now = ctx.currentTime;
@@ -1122,30 +1249,22 @@
         const gain = ctx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, now + i * 0.07);
-        gain.gain.setValueAtTime(0.11, now + i * 0.07);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.65);
+        gain.gain.setValueAtTime(0.09, now + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.6);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now + i * 0.07);
-        osc.stop(now + i * 0.07 + 0.7);
+        osc.stop(now + i * 0.07 + 0.65);
       });
     }
 
     function playSealCelebrationSound(variant) {
+      if (!state.uiSoundOn) return;
       const ctx = getAudio();
       if (!ctx) return;
       const now = ctx.currentTime;
-      const thud = ctx.createOscillator();
-      const thudGain = ctx.createGain();
-      thud.type = 'sine';
-      thud.frequency.setValueAtTime(135, now);
-      thud.frequency.exponentialRampToValueAtTime(42, now + 0.16);
-      thudGain.gain.setValueAtTime(0.35, now);
-      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-      thud.connect(thudGain);
-      thudGain.connect(ctx.destination);
-      thud.start(now);
-      thud.stop(now + 0.19);
+      // Zachte was-stempel druk (droge plop i.p.v. harde piep)
+      playWoodTouch('paper');
 
       const chords = [
         [330, 415.3, 493.88, 659.25],
@@ -1158,19 +1277,19 @@
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
         osc.type = variant === 3 ? 'sine' : 'triangle';
-        const t0 = now + 0.11 + idx * 0.065;
+        const t0 = now + 0.08 + idx * 0.065;
         osc.frequency.setValueAtTime(f, t0);
-        g.gain.setValueAtTime(0.12, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
+        g.gain.setValueAtTime(0.09, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
         osc.connect(g);
         g.connect(ctx.destination);
         osc.start(t0);
-        osc.stop(t0 + 0.58);
+        osc.stop(t0 + 0.55);
       });
     }
 
     // =========================================================================
-    // 2. ACHTERGROND HOUT, SUBTIEL HOUTSNIJWERK OP HET BORD & LOSSE PERKAMENTJES
+    // 2. ACHTERGROND HOUT, SUBTIEL HOUTSNIJWERK & PERKAMENT-SNIPPERTJES
     // =========================================================================
     const BG_WOOD_PAL = [
       [24, 17, 13],
@@ -1205,12 +1324,6 @@
       ctx.putImageData(img, 0, 0);
     }
 
-    /**
-     * Tekent het eikenhouten prikbord ZONDER balkjes:
-     * - Bovenin warm haardlicht op de planken, onderin koeler schaduwhout.
-     * - Subtiel houtsnijwerk ('zeker belangrijk' en 'lekker belangrijk' + fijne rank-krul)
-     *   direct in het hout gekerfd (diep ingelegd, niet schreeuwerig om te lezen).
-     */
     function renderBoardWoodWithCarving() {
       const c = document.getElementById('board-wood-canvas');
       if (!c) return;
@@ -1236,7 +1349,6 @@
         [49, 41, 35]
       ];
 
-      // Zachte diagonale/verticale overgang van warm haardlicht (boven) naar koel schaduwhout (onder)
       const splitCenter = 158;
 
       for (let y = 0; y < H; y++) {
@@ -1244,11 +1356,9 @@
           const plank = Math.floor(x / 30);
           const seam = (x % 30 === 0 && x > 0);
           const grain = Math.sin(y * 0.14 + plank * 1.7 + smoothNoise(x * 0.12, y * 0.04) * 2.5) * 0.12;
-          // Diagonale lichtval van rechtsboven (haard) naar linksonder (schaduw)
           const hearthGlow = ((x / W) * 0.35 + (1 - y / H) * 0.35);
           const val = Math.max(0.08, Math.min(0.92, 0.25 + hearthGlow + grain));
 
-          // Zachte dither-overgang rondom splitCenter (geen harde lijn of balk!)
           const blend = Math.max(0, Math.min(1, (y - (splitCenter - 18)) / 36));
           const useCool = (blend > ((BAYER4[y & 3][x & 3] + 0.5) / 16.0));
           const pal = useCool ? coolPlankPal : warmPlankPal;
@@ -1260,15 +1370,12 @@
       }
       ctx.putImageData(img, 0, 0);
 
-      // Subtiel houtsnijwerk (inscriptie + rankje) direct in het hout gegraveerd:
-      // 1px donkere dieptegroef erboven + 1px zacht-lichte onderrand
       ctx.save();
       ctx.font = 'italic 700 8.5px Georgia, serif';
       ctx.textAlign = 'center';
 
       const drawCarvedInscription = (text, cy, isWarmZone) => {
         const cx = W / 2;
-        // Subtiele ingekerfde hout-ornament-lijn links en rechts
         const lineW = 28;
         const gap = 46;
         ctx.fillStyle = 'rgba(12, 8, 5, 0.55)';
@@ -1278,7 +1385,6 @@
         ctx.fillRect(cx - gap - lineW, cy - 2, lineW, 1);
         ctx.fillRect(cx + gap, cy - 2, lineW, 1);
 
-        // Ingekerfde letters: nauwelijks contrast, puur reliëf in het hout
         ctx.fillStyle = 'rgba(10, 7, 4, 0.62)';
         ctx.fillText(text, cx, cy);
         ctx.fillStyle = isWarmZone ? 'rgba(125, 92, 62, 0.32)' : 'rgba(92, 80, 68, 0.28)';
@@ -1290,10 +1396,6 @@
       ctx.restore();
     }
 
-    /**
-     * Tekent een organisch 16-bit perkament-snippertje (géén vierkant CSS-blok!):
-     * gekartelde pixel-randen, zachte verouderde papier-tinten en een klein koperen spijkertje bovenin.
-     */
     function drawParchmentScrapCanvas(canvas, isWarm, seed) {
       const W = 86, H = 48;
       canvas.width = W;
@@ -1302,7 +1404,6 @@
       const img = ctx.createImageData(W, H);
       const d = img.data;
 
-      // Gedempte, oude perkament-tinten zodat ze NIET fel afsteken tegen het donkere hout
       const warmParch = [
         [146, 126, 98],
         [158, 138, 109],
@@ -1318,7 +1419,6 @@
       const pal = isWarm ? warmParch : coolParch;
 
       for (let y = 0; y < H; y++) {
-        // Organische, gekartelde rand per rij/kolom
         const leftJag  = 2 + Math.floor(hash2d(seed, Math.floor(y / 3)) * 2.4);
         const rightJag = W - 3 - Math.floor(hash2d(seed + 7, Math.floor(y / 3)) * 2.4);
 
@@ -1328,7 +1428,6 @@
 
           const i = (y * W + x) * 4;
 
-          // Zachte slagschaduw rechtsonder op het hout
           if (x >= leftJag + 2 && x <= rightJag + 2 && y >= topJag + 2 && y <= botJag + 2 &&
               (x > rightJag || y > botJag)) {
             d[i] = 10; d[i + 1] = 7; d[i + 2] = 5; d[i + 3] = 135;
@@ -1340,13 +1439,11 @@
             continue;
           }
 
-          // Donkerder verouderd randje langs de scheurrand
           const isEdge = (x === leftJag || x === rightJag || y === topJag || y === botJag);
           let rgb;
           if (isEdge) {
             rgb = isWarm ? [102, 82, 58] : [82, 74, 64];
           } else {
-            // Zachte vignettering naar de randen van het briefje
             const edgeDist = Math.min(x - leftJag, rightJag - x, y - topJag, botJag - y) / 8.0;
             const noise = (smoothNoise(x * 0.25 + seed, y * 0.25) - 0.5) * 0.16;
             const val = Math.min(0.95, 0.35 + Math.min(1, edgeDist) * 0.5 + noise);
@@ -1357,7 +1454,6 @@
         }
       }
 
-      // Klein 16-bit koperen spijkertje midden-bovenin het briefje
       const nx = Math.floor(W / 2), ny = 5;
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
@@ -1426,7 +1522,7 @@
     }
 
     // =========================================================================
-    // 3. LIVE 16-BIT RAAM (ZONDER TEKST-PILLEN EROP)
+    // 3. LIVE 16-BIT RAAM (ZONDER STREEPJES-ARTEFACT BIJ TIKKEN!)
     // =========================================================================
     const lakeState = {
       brightMode: false,
@@ -1454,17 +1550,18 @@
 
     function toggleWindowBrightness() {
       lakeState.brightMode = !lakeState.brightMode;
-      playNailTap();
+      playWoodTouch('wood');
       showToast(lakeState.brightMode ? 'Raam: iets helderder' : 'Raam: chic gedempt');
     }
 
     function setWeatherOverride(mode) {
       lakeState.weatherOverride = mode;
+      playWoodTouch('wood');
       showToast(mode ? `Sfeer: ${mode}` : 'Live weer Alkmaar');
     }
 
-    function pulseLakeRipple(amount = 0.7) {
-      lakeState.rippleEnergy = Math.min(1.5, lakeState.rippleEnergy + amount);
+    function pulseLakeRipple(amount = 0.35) {
+      lakeState.rippleEnergy = Math.min(1.0, lakeState.rippleEnergy + amount);
     }
 
     function drawLakeFrame() {
@@ -1475,8 +1572,8 @@
       const img = ctx.createImageData(W, H);
       const d = img.data;
 
-      lakeState.t += 0.06;
-      lakeState.rippleEnergy *= 0.94;
+      lakeState.t += 0.055;
+      lakeState.rippleEnergy *= 0.92;
       const t = lakeState.t;
       const bright = lakeState.brightMode;
       const mode = lakeState.weatherOverride;
@@ -1531,14 +1628,12 @@
             const wt = wy / (H - horizon);
             col = ditherStep(waterPal, 1 - wt * 0.7, x, y);
 
-            const rippleAmp = 1 + lakeState.rippleEnergy * 2.8;
-            const dx = Math.abs(x - mx + Math.sin(wy * 0.7 - t * 2.2) * rippleAmp);
-            const spread = (2.2 + wy * 0.55) * (1 + lakeState.rippleEnergy * 0.45);
-            const wave = Math.sin(wy * 1.3 - t * 2.5 + x * 0.4);
-            if (dx < spread && wave > -0.15) {
-              col = (dx < spread * 0.45 && wy % 2 === 0) ? orbCore : orbRim;
-            } else if (lakeState.rippleEnergy > 0.08 && Math.sin(wy * 1.6 - t * 4 + x * 0.25) > 0.75) {
-              col = orbRim;
+            // Alleen een zachte, natuurlijke verbreding van de maan-reflectie bij stem/typen (GEEN streepjes over het water!)
+            const sway = Math.sin(wy * 0.65 - t * 1.8) * (0.9 + lakeState.rippleEnergy * 1.2);
+            const dx = Math.abs(x - mx + sway);
+            const spread = (2.2 + wy * 0.52) + lakeState.rippleEnergy * 1.6;
+            if (dx < spread && (wy % 2 === 0 || dx < spread * 0.55)) {
+              col = (dx < spread * 0.42 && wy % 2 === 0) ? orbCore : orbRim;
             }
           }
 
@@ -1567,7 +1662,7 @@
     }
 
     // =========================================================================
-    // 4. DATA, UNDO-STACK & DAG-SPEELBORDEN
+    // 4. DATA, UNDO-STACK & INSTELLINGEN
     // =========================================================================
     const DAYS = ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO'];
     const DAY_FILE_NAMES = {
@@ -1624,14 +1719,15 @@
 
     let state = {
       notes: [],
-      afgerond: [
-        'Welkom in je mobiele Werkplaats'
-      ],
+      afgerond: ['Welkom in je mobiele Werkplaats'],
       dayBoards: { MA: [], DI: [], WO: [], DO: [], VR: [], ZA: [], ZO: [] },
-      undoStack: [], // Houdt je laatste verplaatsing/stempel bij zodat je altijd '↶ Terug' kunt doen!
+      undoStack: [],
       selectedNoteId: null,
       sealMode: false,
       celebrationCounter: 0,
+      quillSoundOn: true,
+      uiSoundOn: true,
+      foldMode: 'auto', // 'auto' | 'diptych' | 'single'
       ghRepo: '',
       ghToken: '',
       claudeKey: ''
@@ -1643,17 +1739,71 @@
         if (saved && Array.isArray(saved.notes)) {
           state = Object.assign(state, saved);
           if (!Array.isArray(state.undoStack)) state.undoStack = [];
+          if (state.quillSoundOn === undefined) state.quillSoundOn = true;
+          if (state.uiSoundOn === undefined) state.uiSoundOn = true;
+          if (!state.foldMode) state.foldMode = 'auto';
         } else {
           state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
         }
       } catch (_) {
         state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
       }
+      applyFoldLayoutClass();
     }
 
     function saveLocalState() {
       localStorage.setItem('werkplaats_mobiel_v6', JSON.stringify(state));
       updateUndoButton();
+    }
+
+    function applyFoldLayoutClass() {
+      const shell = document.getElementById('app-shell');
+      shell.classList.remove('fold-auto', 'force-diptych');
+      if (state.foldMode === 'auto') shell.classList.add('fold-auto');
+      else if (state.foldMode === 'diptych') shell.classList.add('force-diptych');
+    }
+
+    function toggleQuillSound() {
+      state.quillSoundOn = !state.quillSoundOn;
+      saveLocalState();
+      updateSettingsButtons();
+      if (state.quillSoundOn) playQuillScratch();
+    }
+
+    function toggleUiSound() {
+      state.uiSoundOn = !state.uiSoundOn;
+      saveLocalState();
+      updateSettingsButtons();
+      if (state.uiSoundOn) playWoodTouch('wood');
+    }
+
+    function cycleFoldMode() {
+      const modes = ['auto', 'diptych', 'single'];
+      const next = modes[(modes.indexOf(state.foldMode || 'auto') + 1) % modes.length];
+      state.foldMode = next;
+      applyFoldLayoutClass();
+      renderBoard();
+      saveLocalState();
+      updateSettingsButtons();
+      playWoodTouch('wood');
+    }
+
+    function updateSettingsButtons() {
+      const qBtn = document.getElementById('toggle-quill-btn');
+      const uBtn = document.getElementById('toggle-ui-sound-btn');
+      const fBtn = document.getElementById('toggle-fold-btn');
+      if (qBtn) {
+        qBtn.textContent = state.quillSoundOn ? 'Aan' : 'Uit';
+        qBtn.className = `wood-token ${state.quillSoundOn ? 'token-beige' : 'token-cool'}`;
+      }
+      if (uBtn) {
+        uBtn.textContent = state.uiSoundOn ? 'Aan' : 'Uit';
+        uBtn.className = `wood-token ${state.uiSoundOn ? 'token-beige' : 'token-cool'}`;
+      }
+      if (fBtn) {
+        const labels = { auto: 'Auto (Fold)', diptych: 'Altijd Tweeluik', single: '1 Scherm' };
+        fBtn.textContent = labels[state.foldMode || 'auto'];
+      }
     }
 
     function pushUndoSnapshot(label) {
@@ -1679,17 +1829,20 @@
       state.notes = snap.notes;
       state.dayBoards = snap.dayBoards;
       state.afgerond = snap.afgerond;
-      playNailTap();
+      playWoodTouch('paper');
       saveLocalState();
       renderBoard();
       showToast(`↶ Teruggezet: ${snap.label}`);
     }
 
     // =========================================================================
-    // 5. UI RENDERING (HET BORD MET LOSSE PERKAMENTJES & OPEN BRIEFJE)
+    // 5. UI RENDERING
     // =========================================================================
     function switchTab(tabNum) {
-      playNailTap();
+      playWoodTouch('wood');
+      const shell = document.getElementById('app-shell');
+      shell.classList.toggle('detail-open', tabNum === 3);
+
       document.getElementById('screen-1').classList.toggle('active', tabNum === 1);
       document.getElementById('screen-2').classList.toggle('active', tabNum === 2);
       document.getElementById('screen-3').classList.toggle('active', tabNum === 3);
@@ -1757,6 +1910,7 @@
             state.selectedNoteId = note.id;
             stampCurrentNoteDone();
           } else {
+            playWoodTouch('paper');
             openNoteDetail(note.id);
           }
         };
@@ -1766,11 +1920,9 @@
       warmNotes.forEach((n, i) => warmCluster.appendChild(makeScrap(n, i + 1)));
       coolNotes.forEach((n, i) => coolCluster.appendChild(makeScrap(n, i + 20)));
 
-      // Render de 7 dag-knopjes onderaan het bord
       const tray = document.getElementById('board-days-tray');
       tray.innerHTML = '';
       DAYS.forEach((d) => {
-        // Zowel briefjes die op het bord al voorstel=d hebben ALS briefjes die op dat dagbord staan
         const dayItems = state.dayBoards[d] || [];
         const assignedOnBoard = state.notes.filter((n) => n.dag === d);
         const hasItems = dayItems.length > 0 || assignedOnBoard.length > 0;
@@ -1791,8 +1943,6 @@
       document.getElementById('detail-title').textContent = note.title;
       document.getElementById('detail-jouw-zet').textContent = note.jouw_zet || 'Eerstvolgende kleine stap kiezen.';
 
-      // De DOE-KNOP: als er een mail aan hangt -> "Open mail en reageer", anders "Nu oppakken (focus)"
-      const doeBtn = document.getElementById('detail-doe-btn');
       const doeLbl = document.getElementById('detail-doe-label');
       if (note.gmail) {
         doeLbl.textContent = '✉ Doe nu: Open mail in Gmail';
@@ -1819,12 +1969,11 @@
     function triggerDoeAction() {
       const note = state.notes.find((n) => n.id === state.selectedNoteId);
       if (!note) return;
-      playNailTap();
+      playWoodTouch('pin');
       if (note.gmail) {
         window.open(note.gmail, '_blank', 'noopener');
       } else {
         note.warm = true;
-        // Zet hem helemaal vooraan bij Zeker Belangrijk
         state.notes = [note, ...state.notes.filter((n) => n.id !== note.id)];
         saveLocalState();
         showToast('Bovenaan je bord gezet om nu te doen');
@@ -1856,7 +2005,7 @@
       const note = state.notes.find((n) => n.id === state.selectedNoteId);
       if (!note) return;
       note.warm = !note.warm;
-      playNailTap();
+      playWoodTouch('paper');
       updateWeightLabels(note.warm);
       saveLocalState();
       syncToGitHubIfConfigured(`Wissel ${note.title} naar ${note.warm ? 'Warm' : 'Koel'}`);
@@ -1866,7 +2015,7 @@
     function toggleHistoryDetails() {
       const box = document.getElementById('detail-history-box');
       box.style.display = box.style.display === 'block' ? 'none' : 'block';
-      playNailTap();
+      playWoodTouch('paper');
     }
 
     function renderDetailDaysTray(activeDay) {
@@ -1890,7 +2039,6 @@
       pushUndoSnapshot(`"${note.shortTitle || note.title}" op ${DAY_FILE_NAMES[dayCode]}`);
       playBellChime();
 
-      // Bewaar het volledige briefje-object op de dag (zodat je altijd weet wat het was en hem terug kunt halen!)
       note.dag = dayCode;
       if (!state.dayBoards[dayCode]) state.dayBoards[dayCode] = [];
       state.dayBoards[dayCode].push(JSON.parse(JSON.stringify(note)));
@@ -1909,7 +2057,7 @@
     // =========================================================================
     function toggleSealMode() {
       state.sealMode = !state.sealMode;
-      playNailTap();
+      playWoodTouch('wood');
       const btn = document.getElementById('seal-mode-btn');
       btn.classList.toggle('active-mode', state.sealMode);
       document.getElementById('seal-mode-title').textContent = state.sealMode
@@ -2021,7 +2169,7 @@
       const note = state.notes[idx];
       pushUndoSnapshot(`"${note.shortTitle || note.title}" weggegooid`);
       state.notes.splice(idx, 1);
-      playNailTap();
+      playWoodTouch('paper');
       saveLocalState();
       syncToGitHubIfConfigured(`Verwijderd: ${note.title}`);
       showToast('Weggelegd (tik ↶ Terug om terug te halen)');
@@ -2029,64 +2177,151 @@
     }
 
     // =========================================================================
-    // 7. TAB 1 ACTIES: INSPRAAK, PRIK OP BORD & STUUR NAAR BOEK
+    // 7. MIJMER-SPRAAKHERKENNING (BLIJFT HANGEN BIJ ADEMHALEN & GEEN HERHALING!)
     // =========================================================================
     const inputEl = document.getElementById('braindump-input');
+    const interimEl = document.getElementById('speech-interim-preview');
+
     inputEl.addEventListener('input', () => {
       playQuillScratch();
-      pulseLakeRipple(0.45);
+      pulseLakeRipple(0.28);
     });
 
     let recognition = null;
-    let isListening = false;
+    let wantListening = false; // Blijft true tijdens adempauzes/mijmeren tot Gerwald zelf op Stop tikt!
+    let lastCommittedChunk = '';
+
+    /**
+     * Voegt een nieuwe uitgesproken zin samen met de bestaande tekst ZONDER Android-Chrome herhalingen.
+     */
+    function appendSpokenChunkCleanly(newChunk) {
+      const clean = newChunk.trim();
+      if (!clean) return;
+      if (clean.toLowerCase() === lastCommittedChunk.toLowerCase()) return;
+
+      const current = inputEl.value.trim();
+      if (!current) {
+        inputEl.value = clean + ' ';
+        lastCommittedChunk = clean;
+        return;
+      }
+
+      // Check of Android Chrome de vorige zin opnieuw aan het begin van dit blok heeft geplakt
+      if (clean.toLowerCase().startsWith(lastCommittedChunk.toLowerCase()) && lastCommittedChunk.length > 3) {
+        const delta = clean.slice(lastCommittedChunk.length).trim();
+        if (delta) {
+          inputEl.value = current + ' ' + delta + ' ';
+        }
+        lastCommittedChunk = clean;
+        return;
+      }
+
+      // Check op woord-overlap aan het einde van wat er al staat
+      const curWords = current.split(/\s+/);
+      const newWords = clean.split(/\s+/);
+      let maxOverlap = 0;
+      const checkLen = Math.min(curWords.length, newWords.length, 8);
+      for (let k = 1; k <= checkLen; k++) {
+        const tail = curWords.slice(-k).join(' ').toLowerCase();
+        const head = newWords.slice(0, k).join(' ').toLowerCase();
+        if (tail === head) maxOverlap = k;
+      }
+
+      const remaining = newWords.slice(maxOverlap).join(' ');
+      if (remaining) {
+        inputEl.value = current + ' ' + remaining + ' ';
+      }
+      lastCommittedChunk = clean;
+    }
 
     function toggleSpeech() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
         inputEl.focus();
-        showToast('Gebruik het microfoontje op je toetsenbord om in te spreken');
+        showToast('Tip: gebruik je toetsenbord-microfoon of Superwhisper');
         return;
       }
-      if (isListening && recognition) {
-        recognition.stop();
-        return;
-      }
-      recognition = new SR();
-      recognition.lang = 'nl-NL';
-      recognition.continuous = true;
-      recognition.interimResults = true;
 
       const btn = document.getElementById('spreek-btn');
       const lbl = document.getElementById('spreek-label');
 
-      recognition.onstart = () => {
-        isListening = true;
-        btn.classList.add('listening');
-        lbl.textContent = 'Stop';
-        playNailTap();
-      };
+      if (wantListening) {
+        wantListening = false;
+        if (recognition) {
+          try { recognition.stop(); } catch (_) {}
+        }
+        btn.classList.remove('listening');
+        lbl.textContent = 'Spreek';
+        interimEl.textContent = '';
+        playWoodTouch('wood');
+        return;
+      }
+
+      wantListening = true;
+      lastCommittedChunk = '';
+      btn.classList.add('listening');
+      lbl.textContent = 'Stop';
+      playWoodTouch('wood');
+      startSingleSpeechPass();
+    }
+
+    function startSingleSpeechPass() {
+      if (!wantListening) return;
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.lang = 'nl-NL';
+      // Op Android voorkomt continuous=false de beruchte woord-verdubbeling,
+      // en door in onend automatisch opnieuw te starten kun je rustig ademhalen en mijmeren!
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      let passFinal = '';
 
       recognition.onresult = (event) => {
-        pulseLakeRipple(0.95);
+        pulseLakeRipple(0.4);
         playQuillScratch();
-        let finalTranscript = '';
+        let interim = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
+            passFinal = transcript;
+          } else {
+            interim = transcript;
           }
         }
-        if (finalTranscript) {
-          inputEl.value = (inputEl.value ? inputEl.value.trim() + ' ' : '') + finalTranscript.trim();
+        interimEl.textContent = interim ? '… ' + interim : '';
+      };
+
+      recognition.onerror = (ev) => {
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+          wantListening = false;
+          document.getElementById('spreek-btn').classList.remove('listening');
+          document.getElementById('spreek-label').textContent = 'Spreek';
+          interimEl.textContent = '';
         }
       };
 
       recognition.onend = () => {
-        isListening = false;
-        btn.classList.remove('listening');
-        lbl.textContent = 'Spreek';
+        if (passFinal) {
+          appendSpokenChunkCleanly(passFinal);
+          passFinal = '';
+          inputEl.scrollTop = inputEl.scrollHeight;
+        }
+        interimEl.textContent = '';
+
+        // Als Gerwald nog NIET op Stop heeft getikt, blijven we rustig wachten terwijl hij mijmert!
+        if (wantListening) {
+          setTimeout(() => {
+            if (wantListening) {
+              try { startSingleSpeechPass(); } catch (_) {}
+            }
+          }, 180);
+        }
       };
 
-      recognition.start();
+      try {
+        recognition.start();
+      } catch (_) {}
     }
 
     async function prikOpBord() {
@@ -2095,7 +2330,8 @@
         inputEl.focus();
         return;
       }
-      playNailTap();
+      if (wantListening) toggleSpeech();
+      playWoodTouch('pin');
 
       const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
       let title = lines[0].length > 68 ? lines[0].slice(0, 65) + '...' : lines[0];
@@ -2141,6 +2377,7 @@
         inputEl.focus();
         return;
       }
+      if (wantListening) toggleSpeech();
       playBookChord();
       run16BitCelebration(0);
 
@@ -2159,10 +2396,10 @@
     }
 
     // =========================================================================
-    // 8. DAG-MODAL (WAAR JE BRIEFJES VAN DINSDAG KUNT ZIEN, OPENEN OF TERUGHALEN)
+    // 8. DAG-MODAL & AFGEROND KIST
     // =========================================================================
     function openDayModal(dayCode) {
-      playNailTap();
+      playWoodTouch('wood');
       const dayItems = state.dayBoards[dayCode] || [];
       const boardMatches = state.notes.filter((n) => n.dag === dayCode);
 
@@ -2173,7 +2410,6 @@
       if (dayItems.length === 0 && boardMatches.length === 0) {
         list.innerHTML = `<div style="color:var(--beige-muted);font-size:12px;padding:8px 0;">Nog niets op ${DAY_FILE_NAMES[dayCode]}.</div>`;
       } else {
-        // Items die al naar deze dag zijn verplaatst
         dayItems.forEach((item, idx) => {
           const isObj = typeof item === 'object' && item !== null;
           const title = isObj ? item.title : String(item);
@@ -2194,16 +2430,15 @@
             };
             state.dayBoards[dayCode].splice(idx, 1);
             state.notes.unshift(restored);
-            playNailTap();
+            playWoodTouch('paper');
             saveLocalState();
             renderBoard();
             closeDayModal();
-            showToast(`Teruggehangen op het bord`);
+            showToast('Teruggehangen op het bord');
           };
           list.appendChild(row);
         });
 
-        // Items die nog op het bord hangen met dit dag-voorstel
         boardMatches.forEach((note) => {
           const row = document.createElement('div');
           row.className = 'day-modal-item';
@@ -2226,7 +2461,7 @@
     }
 
     function showAfgerondLog() {
-      playNailTap();
+      playWoodTouch('wood');
       document.getElementById('day-modal-title').textContent = 'De Kist (Afgerond)';
       const list = document.getElementById('day-modal-list');
       list.innerHTML = '';
@@ -2416,10 +2651,11 @@
     }
 
     function openSettingsModal() {
-      playNailTap();
+      playWoodTouch('wood');
       document.getElementById('cfg-gh-repo').value = state.ghRepo || '';
       document.getElementById('cfg-gh-token').value = state.ghToken || '';
       document.getElementById('cfg-claude-key').value = state.claudeKey || '';
+      updateSettingsButtons();
       document.getElementById('settings-modal').classList.add('open');
     }
 
