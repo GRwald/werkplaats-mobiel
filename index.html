@@ -1183,8 +1183,8 @@
             <button id="toggle-ui-sound-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleUiSound()">Aan</button>
           </div>
           <div class="toggle-row">
-            <span>Automatisch syncen met GitHub</span>
-            <button id="toggle-autosync-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleAutoSync()">Aan</button>
+            <span>GitHub Sync-ritme</span>
+            <button id="toggle-autosync-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleAutoSync()">2x p/d + ↻</button>
           </div>
           <div class="toggle-row" style="border-bottom:none;">
             <span>Honor Fold Tweeluik</span>
@@ -1242,17 +1242,19 @@
           </div>
         </div>
 
-        <div style="padding:12px;background:#B49F80;color:#24180F;border-radius:6px;border:1px solid #5E4933;font-size:12.5px;line-height:1.55;">
-          <strong>Zo zet je hem vast op je scherm:</strong>
-          <ol style="margin:6px 0 0 18px;padding:0;">
-            <li>Tik rechtsboven in Chrome op de drie puntjes <strong>⋮</strong></li>
-            <li>Tik op <strong>Toevoegen aan startscherm</strong> (of <strong>App installeren</strong>)</li>
-            <li>Kies <strong>Installeren</strong> — hij staat nu als vaste unit tussen je apps!</li>
-          </ol>
+        <a href="werkplaats-mobiel.apk" download="werkplaats-mobiel.apk" class="wood-token token-oxblood" style="height:44px;font-weight:700;font-size:12.5px;text-decoration:none;display:flex;align-items:center;justify-content:center;">
+          📦 Installeer echte Android-App (.apk · zonder leeuwtje)
+        </a>
+
+        <div style="padding:12px;background:#B49F80;color:#24180F;border-radius:6px;border:1px solid #5E4933;font-size:12px;line-height:1.5;">
+          <strong>Optie 1 (Aanrader): Echte Android-App (.apk)</strong><br/>
+          Tik op de rode knop hierboven om <code>werkplaats-mobiel.apk</code> te openen en te installeren. Hij staat dan echt tussen je geïnstalleerde apps (zonder Brave-leeuwtje!).<br/><br/>
+          <strong>Optie 2: Via browser-menu</strong><br/>
+          Tik rechtsboven op <strong>⋮</strong> → <strong>Toevoegen aan startscherm</strong>.
         </div>
 
-        <button class="wood-token token-oxblood" style="height:42px;font-weight:700;font-size:12px;" onclick="closeInstallModal()">
-          Begrepen
+        <button class="wood-token token-oak" style="height:40px;font-weight:700;font-size:12px;" onclick="closeInstallModal()">
+          Sluit
         </button>
       </div>
     </div>
@@ -2327,6 +2329,23 @@
             history.replaceState(null, '', window.location.pathname + window.location.search);
           }
         }
+
+        // Als we in de echte geïnstalleerde Android-app (Werkplaats Mobiel APK) draaien:
+        // haal de ingebakken kluis-sleutel op en verberg de browser-installatieknop
+        if (window.AndroidWerkplaats) {
+          const topBtn = document.getElementById('top-install-btn');
+          if (topBtn) topBtn.style.display = 'none';
+          const pwaBtn = document.getElementById('pwa-install-btn');
+          if (pwaBtn) pwaBtn.style.display = 'none';
+          if (!state.ghToken && typeof window.AndroidWerkplaats.getDefaultToken === 'function') {
+            const baked = window.AndroidWerkplaats.getDefaultToken();
+            if (baked && baked.length > 5) {
+              state.ghToken = baked.trim();
+              state.ghRepo = 'GRwald/ai-werkplaats';
+              saveLocalState();
+            }
+          }
+        }
       } catch (_) {
         state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
       }
@@ -2360,11 +2379,19 @@
     }
 
     function toggleAutoSync() {
-      state.autoSyncOn = state.autoSyncOn === false ? true : false;
+      const modes = ['twice_daily', 'manual', 'instant'];
+      const current = state.syncMode || 'twice_daily';
+      const next = modes[(modes.indexOf(current) + 1) % modes.length];
+      state.syncMode = next;
       saveLocalState();
       updateSettingsButtons();
       playWoodTouch('wood');
-      showToast(state.autoSyncOn ? 'Auto-sync AAN (direct via internet)' : 'Auto-sync UIT (alleen als je op ↻ tikt)');
+      const msgMap = {
+        twice_daily: 'Sync: 2x per dag automatisch + op jouw verzoek (↻)',
+        manual: 'Sync: Alleen op jouw verzoek (via ↻)',
+        instant: 'Sync: Direct bij elke actie + bij openen'
+      };
+      showToast(msgMap[next]);
     }
 
     function cycleFoldMode() {
@@ -2392,9 +2419,10 @@
         uBtn.className = `wood-token ${state.uiSoundOn ? 'token-beige' : 'token-cool'}`;
       }
       if (sBtn) {
-        const isAuto = state.autoSyncOn !== false;
-        sBtn.textContent = isAuto ? 'Aan' : 'Alleen ↻';
-        sBtn.className = `wood-token ${isAuto ? 'token-beige' : 'token-cool'}`;
+        const mode = state.syncMode || 'twice_daily';
+        const labels = { twice_daily: '2x p/d + ↻', manual: 'Alleen ↻', instant: 'Direct' };
+        sBtn.textContent = labels[mode] || '2x p/d + ↻';
+        sBtn.className = `wood-token ${mode !== 'manual' ? 'token-beige' : 'token-cool'}`;
       }
       if (fBtn) {
         const labels = { auto: 'Auto (Fold)', diptych: 'Altijd Tweeluik', single: '1 Scherm' };
@@ -3481,8 +3509,14 @@
 
     async function syncToGitHubIfConfigured(commitMsg, completedNote = null, trashedNote = null, forceManual = false) {
       if (!state.ghRepo || !state.ghToken) return;
-      if (state.autoSyncOn === false && !forceManual) {
+      const mode = state.syncMode || 'twice_daily';
+      if (!forceManual && mode !== 'instant') {
+        // Bewaar wijziging + eventuele afgeronde/verbrande briefjes in wachtrij voor de 2x-per-dag sync of ↻-knop
         state.dirtySync = true;
+        if (!Array.isArray(state.pendingCompleted)) state.pendingCompleted = [];
+        if (!Array.isArray(state.pendingTrashed)) state.pendingTrashed = [];
+        if (completedNote) state.pendingCompleted.push(completedNote);
+        if (trashedNote) state.pendingTrashed.push(trashedNote);
         saveLocalState();
         return;
       }
@@ -3490,29 +3524,34 @@
       try {
         await putGitHubFile('+/kladblok.md', serializeKladblokMarkdown(), commitMsg);
 
-        if (completedNote) {
-          // Volgens AGENTS.md: - [x] ... %%klaar <datum>%% bovenaan onder ## Afgerond in +/afgerond.md
-          const rawHead = (completedNote.rawHeadLine || `- [ ] ${completedNote.title}`)
+        const allCompleted = [...(state.pendingCompleted || []), ...(completedNote ? [completedNote] : [])];
+        for (const cNote of allCompleted) {
+          const rawHead = (cNote.rawHeadLine || `- [ ] ${cNote.title}`)
             .replace(/^- \[[ xX]\]\s*/, '')
             .replace(/\s*%%(warm|koel)%%/g, '');
           const doneLines = [
             `- [x] ${rawHead} %%klaar ${today}%%`,
-            ...(completedNote.rawSubLines || [])
+            ...(cNote.rawSubLines || [])
           ];
           await prependUnderHeadingOnGitHub('+/afgerond.md', '## Afgerond', doneLines, commitMsg);
         }
+        state.pendingCompleted = [];
 
-        if (trashedNote) {
-          // Volgens AGENTS.md: - [ ] ... %%uit kladblok · <datum>%% bovenaan onder ## Prullenbak in +/prullenbak.md
-          const rawHead = (trashedNote.rawHeadLine || `- [ ] ${trashedNote.title}`)
+        const allTrashed = [...(state.pendingTrashed || []), ...(trashedNote ? [trashedNote] : [])];
+        for (const tNote of allTrashed) {
+          const rawHead = (tNote.rawHeadLine || `- [ ] ${tNote.title}`)
             .replace(/^- \[[ xX]\]\s*/, '')
             .replace(/\s*%%(warm|koel)%%/g, '');
           const trashLines = [
             `- [ ] ${rawHead} %%uit kladblok · ${today}%%`,
-            ...(trashedNote.rawSubLines || [])
+            ...(tNote.rawSubLines || [])
           ];
           await prependUnderHeadingOnGitHub('+/prullenbak.md', '## Prullenbak', trashLines, commitMsg);
         }
+        state.pendingTrashed = [];
+        state.dirtySync = false;
+        state.lastAutoSyncAt = Date.now();
+        saveLocalState();
       } catch (_) {}
     }
 
@@ -3865,10 +3904,26 @@
     fetchAlkmaarWeather();
     setInterval(drawLakeFrame, 55);
 
-    // Als Gerwald zijn GitHub Token al heeft gekoppeld (en autoSync aanstaat), haal bij het openen van de app automatisch de verse stand uit de vault!
-    if (state.ghToken && state.autoSyncOn !== false) {
-      pullFromGitHub(true);
+    // 2x per dag automatische sync (ochtend & namiddag, of als laatste sync > 10 uur geleden is) + altijd op verzoek via ↻
+    async function runScheduledTwiceDailySyncIfNeeded() {
+      if (!state.ghToken) return;
+      const mode = state.syncMode || 'twice_daily';
+      if (mode === 'manual') return;
+      const now = Date.now();
+      const last = state.lastAutoSyncAt || 0;
+      const hoursSinceLast = (now - last) / (1000 * 60 * 60);
+      if (mode === 'instant' || hoursSinceLast >= 10) {
+        if (state.dirtySync) {
+          await syncToGitHubIfConfigured('Werkplaats Mobiel: halfdaagse sync', null, null, true);
+        }
+        await pullFromGitHub(true);
+        state.lastAutoSyncAt = Date.now();
+        saveLocalState();
+      }
     }
+
+    runScheduledTwiceDailySyncIfNeeded();
+    setInterval(runScheduledTwiceDailySyncIfNeeded, 30 * 60 * 1000);
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -67,6 +67,8 @@ public class MainActivity extends Activity {
         ws.setDomStorageEnabled(true);
         ws.setDatabaseEnabled(true);
         ws.setAllowFileAccess(true);
+        ws.setAllowFileAccessFromFileURLs(true);
+        ws.setAllowUniversalAccessFromFileURLs(true);
         ws.setMediaPlaybackRequiresUserGesture(false);
         ws.setCacheMode(WebSettings.LOAD_DEFAULT);
 
@@ -182,13 +184,9 @@ public class MainActivity extends Activity {
     }
 
     private void loadBestSource(boolean bustCache) {
-        if (isOnline()) {
-            if (bustCache) {
-                webView.clearCache(true);
-                webView.loadUrl(LIVE_URL + "?v=" + System.currentTimeMillis());
-            } else {
-                webView.loadUrl(LIVE_URL);
-            }
+        if (bustCache && isOnline()) {
+            webView.clearCache(true);
+            webView.loadUrl(LIVE_URL + "?v=" + System.currentTimeMillis());
         } else {
             webView.loadUrl(LOCAL_ASSET_URL);
         }
@@ -204,6 +202,11 @@ public class MainActivity extends Activity {
     }
 
     public class WerkplaatsBridge {
+
+        @JavascriptInterface
+        public String getDefaultToken() {
+            return LocalConfig.GH_TOKEN;
+        }
 
         @JavascriptInterface
         public void reloadFromCloud() {

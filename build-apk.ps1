@@ -1,3 +1,7 @@
+param(
+    [string]$GitHubToken = ""
+)
+
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
@@ -38,7 +42,15 @@ foreach ($assetName in @('index.html', 'manifest.json', 'sw.js', 'icon-192.png',
 
 $BuildDir = Join-Path $ProjectDir 'build'
 if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
-New-Item -ItemType Directory -Force -Path "$BuildDir\compiled_res", "$BuildDir\gen", "$BuildDir\classes", "$BuildDir\dex" | Out-Null
+New-Item -ItemType Directory -Force -Path "$BuildDir\compiled_res", "$BuildDir\gen\nl\gerwald\werkplaatsmobiel", "$BuildDir\classes", "$BuildDir\dex" | Out-Null
+
+$LocalConfigJava = @"
+package nl.gerwald.werkplaatsmobiel;
+public final class LocalConfig {
+    public static final String GH_TOKEN = "$GitHubToken";
+}
+"@
+[System.IO.File]::WriteAllText("$BuildDir\gen\nl\gerwald\werkplaatsmobiel\LocalConfig.java", $LocalConfigJava)
 
 Write-Host "=== 2. Compileer Android resources (aapt2) ==="
 $resFiles = Get-ChildItem -Path (Join-Path $ProjectDir 'res') -File -Recurse
