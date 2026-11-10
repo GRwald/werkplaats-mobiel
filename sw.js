@@ -1,4 +1,4 @@
-const CACHE_NAME = 'werkplaats-mobiel-v15';
+const CACHE_NAME = 'werkplaats-mobiel-v16';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -11,6 +11,44 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('message', (e) => {
+  if (!e.data) return;
+  if (e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  } else if (e.data.type === 'OCHTENDLOOP_NOTIFY') {
+    const title = e.data.title || '🐦‍⬛ Ochtendbode · Werkplaats';
+    const body = e.data.body || 'Er staat een nieuw briefje klaar waarbij jij aan zet bent.';
+    e.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        tag: 'ochtendloop-seintje',
+        renotify: true,
+        vibrate: [90, 60, 120],
+        data: { targetTab: 2 }
+      })
+    );
+  }
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.postMessage({ type: 'OPEN_BORD_FROM_NOTIFICATION' });
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('./#bord');
+      }
+    })
   );
 });
 
