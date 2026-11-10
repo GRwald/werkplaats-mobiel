@@ -11,6 +11,7 @@ $ErrorActionPreference = 'Continue'
 $Adb      = 'D:\Anitgravity-Lab\bouwblokken\android-sdk\platform-tools\adb.exe'
 $ApkPath  = 'D:\Anitgravity-Lab\producten\werkplaats-mobiel.apk'
 $BuildPs1 = 'D:\Anitgravity-Lab\projecten\werkplaats-mobiel\build-apk.ps1'
+$QrPng    = 'C:\Users\gerwa\.gemini\antigravity\brain\456e5662-f4a1-4bb0-8f89-6b3fc31d673b\qr-koppel-sleutel.png'
 
 if (-not $GitHubToken) {
     try {
@@ -25,8 +26,8 @@ if (-not $GitHubToken) {
 }
 
 if ($RebuildApk) {
-    Write-Host "=== 0. Bak werkplaats-mobiel.apk ==="
-    & powershell -ExecutionPolicy Bypass -File $BuildPs1
+    Write-Host "=== 0. Bak werkplaats-mobiel.apk met ingebakken GitHub-sleutel ==="
+    & powershell -ExecutionPolicy Bypass -File $BuildPs1 -GitHubToken $GitHubToken
     Copy-Item -Path $ApkPath -Destination 'D:\Anitgravity-Lab\projecten\werkplaats-mobiel\werkplaats-mobiel.apk' -Force
 }
 
@@ -46,9 +47,12 @@ $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $url = "https://grwald.github.io/werkplaats-mobiel/?v=$ts"
 
 if ($GitHubToken) {
-    Write-Host "=== GitHub-sleutel gevonden op pc -> wordt veilig via USB meegekoppeld naar je telefoon ==="
+    Write-Host "=== GitHub-sleutel gevonden op pc -> wordt veilig via USB/QR klaargezet ==="
     $url += "#token=$GitHubToken&repo=$GitHubRepo"
     if ($ClaudeKey) { $url += "&claude=$ClaudeKey" }
+    try {
+        python -c "import qrcode; img = qrcode.make('$url'); img.save(r'$QrPng')" 2>$null
+    } catch {}
 }
 
 Write-Host "=== 2. Koppel GitHub-sleutel direct aan de geïnstalleerde Werkplaats Mobiel APK ==="
