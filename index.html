@@ -605,33 +605,41 @@
     }
 
     .parchment-cluster {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px 9px;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: stretch;
     }
 
     .parchment-scrap {
       position: relative;
-      padding: 13px 11px 11px;
+      padding: 8px 11px 8px 22px;
       cursor: pointer;
       transition: transform 0.1s ease, filter 0.12s ease;
-      min-height: 68px;
+      min-height: 36px;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
 
-    .parchment-scrap:nth-child(odd) {
-      transform: rotate(-0.6deg);
+    .parchment-scrap:nth-child(3n+1) {
+      transform: rotate(-0.22deg);
+      margin-right: 4px;
     }
-    .parchment-scrap:nth-child(even) {
-      transform: rotate(0.55deg);
-      margin-top: 3px;
+    .parchment-scrap:nth-child(3n+2) {
+      transform: rotate(0.18deg);
+      margin-left: 5px;
+    }
+    .parchment-scrap:nth-child(3n) {
+      transform: rotate(-0.1deg);
+      margin-left: 2px;
+      margin-right: 2px;
     }
 
     .parchment-scrap:active {
-      transform: scale(0.98);
+      transform: scale(0.985);
     }
 
     .scrap-canvas {
@@ -650,42 +658,69 @@
       font-family: 'Merriweather', serif;
       font-size: 11.5px;
       font-weight: 700;
-      line-height: 1.38;
-      color: #2A1D13;
-      word-break: break-word;
+      line-height: 1.3;
+      color: #261910;
+      flex: 1;
+      min-width: 0;
     }
 
     .parchment-scrap.cool .scrap-title {
-      color: #27221E;
+      color: #2A241F;
       font-weight: 400;
+      font-size: 11px;
     }
 
     .scrap-meta {
       position: relative;
       z-index: 2;
-      margin-top: 6px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
       font-size: 9.5px;
       font-weight: 700;
-      color: #5E4530;
+      color: #5A402B;
     }
 
     .parchment-scrap.cool .scrap-meta {
       color: #4D453D;
     }
 
+    .scrap-bron-tag {
+      font-family: 'Inter', sans-serif;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #5C432E;
+      max-width: 82px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .scrap-day-tag {
-      padding: 1px 4px;
-      background: rgba(110, 86, 58, 0.25);
+      padding: 1px 5px;
+      background: rgba(92, 68, 44, 0.22);
+      border: 1px solid rgba(92, 68, 44, 0.32);
       border-radius: 2px;
-      color: #3E2B1C;
+      color: #382516;
+      font-size: 9px;
+      letter-spacing: 0.03em;
     }
 
     .carved-zone-spacer {
-      height: 22px;
+      height: 28px;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(168, 134, 98, 0.42);
+      font-family: Georgia, serif;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-shadow: 0 -1px 0 rgba(8, 5, 3, 0.85);
+      user-select: none;
     }
 
     .board-tools-row {
@@ -758,21 +793,22 @@
       background: #2C1E14;
     }
 
-    /* 16-BIT OCHTENDBODE PERKAMENT-STROOKJE BOVENAAN HET BORD */
+    /* 16-BIT OCHTENDBODE SLANK LINTJE BOVENAAN HET BORD (UITKLAPBAAR) */
     .ochtendbode-banner {
       display: none;
-      margin: 2px 2px 8px;
-      padding: 9px 11px;
-      background: linear-gradient(180deg, #C8B28E 0%, #B29A74 100%);
-      border: 2px solid #3B2818;
+      margin: 0 2px 7px;
+      padding: 5px 9px;
+      background: linear-gradient(180deg, #322217 0%, #241810 100%);
+      border: 1px solid #6E5238;
       box-shadow:
-        inset 0 1px 0 #DFCEB2,
-        0 3px 8px rgba(0, 0, 0, 0.65);
+        inset 0 1px 0 rgba(223, 206, 178, 0.22),
+        0 2px 5px rgba(0, 0, 0, 0.55);
       border-radius: 4px;
-      color: #24170E;
-      font-size: 11.5px;
-      line-height: 1.4;
+      color: #DFCEB2;
+      font-size: 11px;
+      line-height: 1.35;
       position: relative;
+      cursor: pointer;
     }
 
     .ochtendbode-banner.visible {
@@ -783,22 +819,37 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 6px;
       font-family: 'Merriweather', serif;
-      font-weight: 900;
-      font-size: 11.5px;
-      color: #5E1D18;
-      margin-bottom: 3px;
+      font-weight: 700;
+      font-size: 11px;
+      color: #E5D4B8;
+    }
+
+    #ochtendbode-body {
+      display: none;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(140, 108, 78, 0.35);
+      color: #D2C0A2;
+      font-size: 11px;
+      line-height: 1.42;
+    }
+
+    .ochtendbode-banner.expanded #ochtendbode-body {
+      display: block;
     }
 
     .ochtendbode-dismiss {
-      background: #3B2818;
+      background: #4A3322;
       color: #DFCEB2;
-      border: 1px solid #6E5239;
+      border: 1px solid #7C5E42;
       border-radius: 3px;
-      padding: 2px 7px;
-      font-size: 10px;
+      padding: 2px 6px;
+      font-size: 9.5px;
       font-weight: 700;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     /* ==========================================================================
@@ -1122,15 +1173,18 @@
             <canvas id="board-wood-canvas"></canvas>
 
             <div class="board-scroll-area">
-              <div id="ochtendbode-banner" class="ochtendbode-banner">
+              <div id="ochtendbode-banner" class="ochtendbode-banner" onclick="toggleOchtendbodeExpand(event)">
                 <div class="ochtendbode-header">
-                  <span id="ochtendbode-title">🐦‍⬛ Ochtendbode · Jij bent aan zet</span>
-                  <button class="ochtendbode-dismiss" onclick="dismissOchtendbodeBanner()">Gezien ✕</button>
+                  <span id="ochtendbode-title">🐦‍⬛ Ochtendbode</span>
+                  <div style="display:flex;align-items:center;gap:5px;">
+                    <span id="ochtendbode-chevron" style="font-size:10px;color:#B89F7D;">Bekijk ▾</span>
+                    <button class="ochtendbode-dismiss" onclick="dismissOchtendbodeBanner(event)">✕</button>
+                  </div>
                 </div>
                 <div id="ochtendbode-body"></div>
               </div>
               <div id="warm-notes-cluster" class="parchment-cluster"></div>
-              <div id="carved-divider-anchor" class="carved-zone-spacer"></div>
+              <div id="carved-divider-anchor" class="carved-zone-spacer">── &nbsp; lekker belangrijk &nbsp; ──</div>
               <div id="cool-notes-cluster" class="parchment-cluster"></div>
             </div>
           </div>
@@ -1717,12 +1771,11 @@
       };
 
       drawCarvedInscription('zeker belangrijk', 12, true);
-      drawCarvedInscription('lekker belangrijk', splitCenter + 6, false);
       ctx.restore();
     }
 
     function drawParchmentScrapCanvas(canvas, isWarm, seed) {
-      const W = 86, H = 48;
+      const W = 240, H = 34;
       canvas.width = W;
       canvas.height = H;
       const ctx = canvas.getContext('2d');
@@ -1730,32 +1783,33 @@
       const d = img.data;
 
       const warmParch = [
-        [146, 126, 98],
-        [158, 138, 109],
-        [170, 150, 120],
-        [180, 160, 130]
+        [156, 136, 106],
+        [168, 148, 117],
+        [178, 158, 127],
+        [188, 168, 137]
       ];
       const coolParch = [
-        [124, 114, 100],
-        [136, 126, 112],
-        [146, 136, 122],
-        [156, 146, 132]
+        [128, 118, 104],
+        [139, 129, 115],
+        [149, 139, 125],
+        [158, 148, 134]
       ];
       const pal = isWarm ? warmParch : coolParch;
 
       for (let y = 0; y < H; y++) {
-        const leftJag  = 2 + Math.floor(hash2d(seed, Math.floor(y / 3)) * 2.4);
-        const rightJag = W - 3 - Math.floor(hash2d(seed + 7, Math.floor(y / 3)) * 2.4);
+        // Subtiele, rustige papierrand i.p.v. grove zaagtanden
+        const leftJag  = 1 + (hash2d(seed, Math.floor(y / 9)) > 0.72 ? 1 : 0);
+        const rightJag = W - 2 - (hash2d(seed + 7, Math.floor(y / 9)) > 0.68 ? 1 : 0);
 
         for (let x = 0; x < W; x++) {
-          const topJag = 2 + Math.floor(hash2d(Math.floor(x / 4), seed + 13) * 1.8);
-          const botJag = H - 3 - Math.floor(hash2d(Math.floor(x / 4), seed + 29) * 2.2);
+          const topJag = 1 + (hash2d(Math.floor(x / 18), seed + 13) > 0.76 ? 1 : 0);
+          const botJag = H - 2 - (hash2d(Math.floor(x / 18), seed + 29) > 0.74 ? 1 : 0);
 
           const i = (y * W + x) * 4;
 
-          if (x >= leftJag + 2 && x <= rightJag + 2 && y >= topJag + 2 && y <= botJag + 2 &&
+          if (x >= leftJag + 1 && x <= rightJag + 1 && y >= topJag + 1 && y <= botJag + 1 &&
               (x > rightJag || y > botJag)) {
-            d[i] = 10; d[i + 1] = 7; d[i + 2] = 5; d[i + 3] = 135;
+            d[i] = 10; d[i + 1] = 7; d[i + 2] = 5; d[i + 3] = 125;
             continue;
           }
 
@@ -1767,11 +1821,11 @@
           const isEdge = (x === leftJag || x === rightJag || y === topJag || y === botJag);
           let rgb;
           if (isEdge) {
-            rgb = isWarm ? [102, 82, 58] : [82, 74, 64];
+            rgb = isWarm ? [104, 83, 58] : [84, 75, 65];
           } else {
-            const edgeDist = Math.min(x - leftJag, rightJag - x, y - topJag, botJag - y) / 8.0;
-            const noise = (smoothNoise(x * 0.25 + seed, y * 0.25) - 0.5) * 0.16;
-            const val = Math.min(0.95, 0.35 + Math.min(1, edgeDist) * 0.5 + noise);
+            const edgeDist = Math.min(x - leftJag, rightJag - x, y - topJag, botJag - y) / 6.0;
+            const noise = (smoothNoise(x * 0.22 + seed, y * 0.22) - 0.5) * 0.12;
+            const val = Math.min(0.95, 0.38 + Math.min(1, edgeDist) * 0.48 + noise);
             rgb = ditherStep(pal, val, x, y);
           }
 
@@ -1779,14 +1833,15 @@
         }
       }
 
-      const nx = Math.floor(W / 2), ny = 5;
+      // 16-bit messing spijkertje links op de perkament-strook
+      const nx = 9, ny = Math.floor(H / 2);
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           const idx = ((ny + dy) * W + (nx + dx)) * 4;
           const hi = (dx + dy < 0);
-          d[idx]     = hi ? 204 : 112;
-          d[idx + 1] = hi ? 182 : 86;
-          d[idx + 2] = hi ? 144 : 56;
+          d[idx]     = hi ? 214 : 108;
+          d[idx + 1] = hi ? 190 : 82;
+          d[idx + 2] = hi ? 148 : 52;
           d[idx + 3] = 255;
         }
       }
@@ -2503,7 +2558,18 @@
       await checkOchtendloopAndNotify(true);
     }
 
-    function dismissOchtendbodeBanner() {
+    function toggleOchtendbodeExpand(ev) {
+      if (ev && ev.target && ev.target.closest('.ochtendbode-dismiss')) return;
+      playWoodTouch('paper');
+      const banner = document.getElementById('ochtendbode-banner');
+      const chev = document.getElementById('ochtendbode-chevron');
+      if (!banner) return;
+      const expanded = banner.classList.toggle('expanded');
+      if (chev) chev.textContent = expanded ? 'Inklappen ▴' : 'Bekijk ▾';
+    }
+
+    function dismissOchtendbodeBanner(ev) {
+      if (ev) ev.stopPropagation();
       playWoodTouch('paper');
       if (state.ochtendbodeInfo && state.ochtendbodeInfo.date) {
         state.dismissedOchtendbodeDate = state.ochtendbodeInfo.date;
@@ -2524,7 +2590,7 @@
       }
       const titleEl = document.getElementById('ochtendbode-title');
       const bodyEl = document.getElementById('ochtendbode-body');
-      titleEl.textContent = `🐦‍⬛ Ochtendbode (${info.date || 'vandaag'}) · ${info.aanZetCount}x jij aan zet`;
+      titleEl.textContent = `🐦‍⬛ Ochtendbode · ${info.aanZetCount}x jij aan zet`;
       bodyEl.innerHTML = info.summaryHtml || 'Er liggen nieuwe briefjes op je bord klaar.';
       banner.classList.add('visible');
     }
@@ -2741,19 +2807,23 @@
         canvas.className = 'scrap-canvas';
         drawParchmentScrapCanvas(canvas, note.warm, idx * 17 + (note.id.charCodeAt(0) || 3));
 
-        const shortTxt = note.shortTitle || (note.title.length > 34 ? note.title.slice(0, 32) + '…' : note.title);
-        const dayTag = note.dag ? `<span class="scrap-day-tag">${note.dag}</span>` : '<span></span>';
+        const displayTxt = note.title.length > 62 ? note.title.slice(0, 60) + '…' : note.title;
+        const cleanBron = (note.bron && note.bron !== 'Kladblok' && note.bron !== 'Mail')
+          ? `<span class="scrap-bron-tag">${escapeHtml(note.bron.replace(/\(\?\)/g, '').trim())}</span>`
+          : '';
+        const dayTag = note.dag ? `<span class="scrap-day-tag">${note.dag}</span>` : '';
         const mailDot = note.gmail ? '<span>✉</span>' : '';
 
         div.appendChild(canvas);
-        const content = document.createElement('div');
-        content.style.position = 'relative';
-        content.style.zIndex = '2';
-        content.innerHTML = `
-          <div class="scrap-title">${escapeHtml(shortTxt)}</div>
-          <div class="scrap-meta">${dayTag}${mailDot}</div>
-        `;
-        div.appendChild(content);
+        const titleEl = document.createElement('div');
+        titleEl.className = 'scrap-title';
+        titleEl.textContent = displayTxt;
+        div.appendChild(titleEl);
+
+        const metaEl = document.createElement('div');
+        metaEl.className = 'scrap-meta';
+        metaEl.innerHTML = `${cleanBron}${dayTag}${mailDot}`;
+        div.appendChild(metaEl);
 
         div.onclick = () => {
           if (state.sealMode) {
@@ -4018,6 +4088,9 @@
           }
 
           // 5. Bepaal Zeker belangrijk (warm) vs Lekker belangrijk (koel)
+          // Strengere schifting: twijfelpunten met (?) of weekend-klusjes (ZA) zakken naar Lekker belangrijk,
+          // zodat bovenaan alleen de 4-5 échte acties hangen waar jij nu aan zet bent.
+          const isUncertainOrWeekend = rawHeadLine.includes('(?)') || dag === 'ZA' || dag === 'ZO';
           let warm;
           let warmToggled = false;
           if (rawHeadLine.includes('%%koel%%')) {
@@ -4026,16 +4099,17 @@
           } else if (rawHeadLine.includes('%%warm%%')) {
             warm = true;
             warmToggled = true;
+          } else if (isUncertainOrWeekend) {
+            warm = false;
           } else {
-            warm = Boolean(
+            const autoWarmCountSoFar = parsed.filter((p) => p.warm).length;
+            warm = autoWarmCountSoFar < 5 && Boolean(
               rawSubLines.length > 0 ||
-              gmail ||
-              dag ||
-              /jij bent aan zet|factuur|belasting|cursus|datum|opname/i.test(fullBlock)
+              /jij bent aan zet|factuur|belasting|kiezen|beantwoorden|checken/i.test(fullBlock)
             );
           }
 
-          const shortTitle = mainTitle.length > 34 ? mainTitle.slice(0, 32) + '…' : mainTitle;
+          const shortTitle = mainTitle.length > 58 ? mainTitle.slice(0, 56) + '…' : mainTitle;
 
           parsed.push({
             id: 'kb-' + i + '-' + Date.now(),
