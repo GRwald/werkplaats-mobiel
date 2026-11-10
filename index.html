@@ -1019,6 +1019,9 @@
         <button id="top-install-btn" class="wood-token token-beige app-install-pill" title="Zet als vaste App op je telefoon" onclick="installStandaloneApp()">
           <span>📲 App</span>
         </button>
+        <button id="top-sync-btn" class="wood-token token-oak icon-btn" title="Ververs app & haal laatste Kladblok op" onclick="refreshAndSyncApp()">
+          ↻
+        </button>
         <button class="wood-token token-oak icon-btn" title="Instellingen" onclick="openSettingsModal()">
           ⚙
         </button>
@@ -1293,6 +1296,52 @@
       }
       document.getElementById('install-modal').classList.add('open');
     }
+
+    // Directe ververs- en synchronisatieknop (voor de losse Brave-app én de Android-APK)
+    async function refreshAndSyncApp(forceCodeReload = false) {
+      playWoodTouch('wood');
+      showToast('↻ Kluis & app verversen...');
+
+      // 1. Controleer op de achtergrond of er een nieuwe Service Worker / code-update klaarstaat
+      if ('serviceWorker' in navigator) {
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) {
+            await reg.update();
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2. Haal direct het actuele Kladblok & de Dagborden op uit GRwald/ai-werkplaats
+      if (state.ghToken) {
+        await pullFromGitHub(false);
+      } else {
+        openSettingsModal();
+        showToast('Koppel eenmalig je GitHub Token om +/kladblok.md te laden');
+      }
+
+      if (forceCodeReload) {
+        if (window.AndroidWerkplaats && typeof window.AndroidWerkplaats.reloadFromCloud === 'function') {
+          window.AndroidWerkplaats.reloadFromCloud();
+        } else {
+          window.location.reload();
+        }
+      }
+    }
+
+    // Ontvang configuratie rechtstreeks vanaf de pc via Android SDK (adb)
+    window.receiveAdbConfig = function(token, repo, claudeKey) {
+      if (token) state.ghToken = token.trim();
+      if (repo) state.ghRepo = repo.trim();
+      if (claudeKey) state.claudeKey = claudeKey.trim();
+      saveLocalState();
+      if (state.ghToken) {
+        pullFromGitHub(false);
+      }
+    };
 
     // =========================================================================
     // 1. 16-BIT PIXEL & GELUIDS-ENGINE (INCL. HAARDVUUR-GEKNISPER & INKT-DOOP)

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'werkplaats-mobiel-v11';
+const CACHE_NAME = 'werkplaats-mobiel-v12';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
