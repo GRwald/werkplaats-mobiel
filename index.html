@@ -1470,14 +1470,26 @@
       }
     }
 
-    // Ontvang configuratie rechtstreeks vanaf de pc via Android SDK (adb)
+    // Ontvang configuratie rechtstreeks vanaf de pc via Android SDK (adb) of vanuit Android SharedPreferences
     window.receiveAdbConfig = function(token, repo, claudeKey) {
-      if (token) state.ghToken = token.trim();
-      if (repo) state.ghRepo = repo.trim();
-      if (claudeKey) state.claudeKey = claudeKey.trim();
-      saveLocalState();
-      if (state.ghToken) {
-        pullFromGitHub(false);
+      let changed = false;
+      const hadTokenBefore = Boolean(state.ghToken);
+      const isDefaultBoard = !Array.isArray(state.notes) || state.notes.length === 0 || (state.notes[0] && String(state.notes[0].id || '').startsWith('welkom-'));
+      if (token && token.trim() !== state.ghToken) {
+        state.ghToken = token.trim();
+        changed = true;
+      }
+      if (repo && repo.trim() !== state.ghRepo) {
+        state.ghRepo = repo.trim();
+        changed = true;
+      }
+      if (claudeKey && claudeKey.trim() !== state.claudeKey) {
+        state.claudeKey = claudeKey.trim();
+        changed = true;
+      }
+      if (changed) saveLocalState();
+      if (state.ghToken && (!hadTokenBefore || isDefaultBoard || changed)) {
+        pullFromGitHub(hadTokenBefore && !isDefaultBoard);
       }
     };
 
@@ -2430,7 +2442,15 @@
 
     function loadLocalState() {
       try {
-        const saved = JSON.parse(localStorage.getItem('werkplaats_mobiel_v6') || 'null');
+        let rawJson = localStorage.getItem('werkplaats_mobiel_v6');
+        if ((!rawJson || rawJson === 'null') && window.AndroidWerkplaats && typeof window.AndroidWerkplaats.getSavedStateJson === 'function') {
+          const nativeJson = window.AndroidWerkplaats.getSavedStateJson();
+          if (nativeJson && nativeJson.length > 10) {
+            rawJson = nativeJson;
+            localStorage.setItem('werkplaats_mobiel_v6', nativeJson);
+          }
+        }
+        const saved = JSON.parse(rawJson || 'null');
         if (saved && Array.isArray(saved.notes)) {
           state = Object.assign(state, saved);
           if (!Array.isArray(state.undoStack)) state.undoStack = [];
@@ -2481,7 +2501,18 @@
     }
 
     function saveLocalState() {
-      localStorage.setItem('werkplaats_mobiel_v6', JSON.stringify(state));
+      const json = JSON.stringify(state);
+      localStorage.setItem('werkplaats_mobiel_v6', json);
+      if (window.AndroidWerkplaats) {
+        try {
+          if (typeof window.AndroidWerkplaats.saveStateJson === 'function') {
+            window.AndroidWerkplaats.saveStateJson(json);
+          }
+          if (typeof window.AndroidWerkplaats.saveCredentials === 'function' && state.ghToken) {
+            window.AndroidWerkplaats.saveCredentials(state.ghToken, state.ghRepo || 'GRwald/ai-werkplaats', state.claudeKey || '');
+          }
+        } catch (_) {}
+      }
       updateUndoButton();
     }
 
@@ -4212,12 +4243,13 @@
     // 2x per dag automatische sync (ochtend & namiddag, of als laatste sync > 10 uur geleden is) + altijd op verzoek via ↻
     async function runScheduledTwiceDailySyncIfNeeded() {
       if (!state.ghToken) return;
+      const isDefaultBoard = !Array.isArray(state.notes) || state.notes.length === 0 || (state.notes[0] && String(state.notes[0].id || '').startsWith('welkom-'));
       const mode = state.syncMode || 'twice_daily';
-      if (mode === 'manual') return;
+      if (mode === 'manual' && !isDefaultBoard) return;
       const now = Date.now();
       const last = state.lastAutoSyncAt || 0;
       const hoursSinceLast = (now - last) / (1000 * 60 * 60);
-      if (mode === 'instant' || hoursSinceLast >= 10) {
+      if (isDefaultBoard || mode === 'instant' || hoursSinceLast >= 10) {
         if (state.dirtySync) {
           await syncToGitHubIfConfigured('Werkplaats Mobiel: halfdaagse sync', null, null, true);
         }

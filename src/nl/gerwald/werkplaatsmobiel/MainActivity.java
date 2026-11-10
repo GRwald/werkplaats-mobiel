@@ -8,6 +8,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
@@ -36,6 +37,7 @@ public class MainActivity extends Activity {
 
     private static final String LIVE_URL = "https://grwald.github.io/werkplaats-mobiel/";
     private static final String LOCAL_ASSET_URL = "file:///android_asset/index.html";
+    private static final String PREFS_NAME = "werkplaats_native_prefs";
     private static final int REQ_RECORD_AUDIO = 1001;
 
     private WebView webView;
@@ -44,6 +46,24 @@ public class MainActivity extends Activity {
     private String pendingToken = null;
     private String pendingRepo = null;
     private String pendingClaudeKey = null;
+
+    private SharedPreferences getPrefs() {
+        return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    private void saveNativeConfig(String token, String repo, String claude) {
+        SharedPreferences.Editor ed = getPrefs().edit();
+        if (token != null && !token.trim().isEmpty()) {
+            ed.putString("gh_token", token.trim());
+        }
+        if (repo != null && !repo.trim().isEmpty()) {
+            ed.putString("gh_repo", repo.trim());
+        }
+        if (claude != null && !claude.trim().isEmpty()) {
+            ed.putString("claude_key", claude.trim());
+        }
+        ed.apply();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,21 +167,28 @@ public class MainActivity extends Activity {
         if (intent.hasExtra("token")) pendingToken = intent.getStringExtra("token");
         if (intent.hasExtra("repo")) pendingRepo = intent.getStringExtra("repo");
         if (intent.hasExtra("claude")) pendingClaudeKey = intent.getStringExtra("claude");
+        if (pendingToken != null || pendingRepo != null || pendingClaudeKey != null) {
+            saveNativeConfig(pendingToken, pendingRepo, pendingClaudeKey);
+        }
         return intent.getBooleanExtra("refresh", false);
     }
 
     private void pushPendingAdbConfigToWeb() {
         if (webView == null) return;
-        if (pendingToken != null || pendingRepo != null || pendingClaudeKey != null) {
+        SharedPreferences prefs = getPrefs();
+        String tok = pendingToken != null ? pendingToken : prefs.getString("gh_token", LocalConfig.GH_TOKEN);
+        String rep = pendingRepo != null ? pendingRepo : prefs.getString("gh_repo", "GRwald/ai-werkplaats");
+        String cla = pendingClaudeKey != null ? pendingClaudeKey : prefs.getString("claude_key", null);
+        pendingToken = null;
+        pendingRepo = null;
+        pendingClaudeKey = null;
+        if ((tok != null && !tok.isEmpty()) || (cla != null && !cla.isEmpty())) {
             final String js = String.format(
                     "if(window.receiveAdbConfig){window.receiveAdbConfig(%s,%s,%s);}",
-                    toJsStr(pendingToken),
-                    toJsStr(pendingRepo != null ? pendingRepo : "GRwald/ai-werkplaats"),
-                    toJsStr(pendingClaudeKey)
+                    toJsStr(tok),
+                    toJsStr(rep != null ? rep : "GRwald/ai-werkplaats"),
+                    toJsStr(cla)
             );
-            pendingToken = null;
-            pendingRepo = null;
-            pendingClaudeKey = null;
             webView.post(new Runnable() {
                 @Override
                 public void run() {
@@ -188,9 +215,13 @@ public class MainActivity extends Activity {
     }
 
     private void loadBestSource(boolean bustCache) {
-        if (bustCache && isOnline()) {
-            webView.clearCache(true);
-            webView.loadUrl(LIVE_URL + "?v=" + System.currentTimeMillis());
+        if (isOnline()) {
+            if (bustCache) {
+                webView.clearCache(true);
+                webView.loadUrl(LIVE_URL + "?v=" + System.currentTimeMillis());
+            } else {
+                webView.loadUrl(LIVE_URL);
+            }
         } else {
             webView.loadUrl(LOCAL_ASSET_URL);
         }
@@ -248,7 +279,25 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getDefaultToken() {
+            String saved = getPrefs().getString("gh_token", "");
+            if (saved != null && !saved.isEmpty()) return saved;
             return LocalConfig.GH_TOKEN;
+        }
+
+        @JavascriptInterface
+        public String getSavedStateJson() {
+            return getPrefs().getString("saved_state_json", "");
+        }
+
+        @JavascriptInterface
+        public void saveStateJson(final String json) {
+            if (json == null) return;
+            getPrefs().edit().putString("saved_state_json", json).apply();
+        }
+
+        @JavascriptInterface
+        public void saveCredentials(final String token, final String repo, final String claude) {
+            saveNativeConfig(token, repo, claude);
         }
 
         @JavascriptInterface
