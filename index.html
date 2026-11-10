@@ -1242,15 +1242,18 @@
           </div>
         </div>
 
-        <a href="werkplaats-mobiel.apk" download="werkplaats-mobiel.apk" class="wood-token token-oxblood" style="height:44px;font-weight:700;font-size:12.5px;text-decoration:none;display:flex;align-items:center;justify-content:center;">
-          📦 Installeer echte Android-App (.apk · zonder leeuwtje)
+        <a href="werkplaats-mobiel.apk" download="werkplaats-mobiel.apk" class="wood-token token-oxblood" style="height:44px;font-weight:700;font-size:12px;text-decoration:none;display:flex;align-items:center;justify-content:center;">
+          📦 Stap 1: Download echte Android-App (.apk · zonder leeuwtje)
         </a>
 
+        <button class="wood-token token-beige" style="height:44px;font-weight:700;font-size:12px;" onclick="openEnKoppelAndroidApp()">
+          🔑 Stap 2: Open geïnstalleerde App + neem Kluis-sleutel mee
+        </button>
+
         <div style="padding:12px;background:#B49F80;color:#24180F;border-radius:6px;border:1px solid #5E4933;font-size:12px;line-height:1.5;">
-          <strong>Optie 1 (Aanrader): Echte Android-App (.apk)</strong><br/>
-          Tik op de rode knop hierboven om <code>werkplaats-mobiel.apk</code> te openen en te installeren. Hij staat dan echt tussen je geïnstalleerde apps (zonder Brave-leeuwtje!).<br/><br/>
-          <strong>Optie 2: Via browser-menu</strong><br/>
-          Tik rechtsboven op <strong>⋮</strong> → <strong>Toevoegen aan startscherm</strong>.
+          <strong>Zo staat hij in 2 tikken als echte app (zonder Brave-leeuwtje) op je Honor:</strong><br/>
+          1. Tik op <strong>Stap 1</strong> om <code>werkplaats-mobiel.apk</code> te downloaden en te installeren.<br/>
+          2. Tik daarna hier op <strong>Stap 2</strong>: dan opent de nieuwe Android-app direct mét de GitHub-sleutel die hier al in Brave zit!
         </div>
 
         <button class="wood-token token-oak" style="height:40px;font-weight:700;font-size:12px;" onclick="closeInstallModal()">
@@ -1285,6 +1288,15 @@
 
     function closeInstallModal() {
       document.getElementById('install-modal').classList.remove('open');
+    }
+
+    function openEnKoppelAndroidApp() {
+      playWoodTouch('wood');
+      const params = new URLSearchParams();
+      if (state.ghToken) params.set('token', state.ghToken);
+      params.set('repo', state.ghRepo || 'GRwald/ai-werkplaats');
+      if (state.claudeKey) params.set('claude', state.claudeKey);
+      window.location.href = 'werkplaats://koppel?' + params.toString();
     }
 
     async function installStandaloneApp() {
