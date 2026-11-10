@@ -2219,6 +2219,13 @@
 
     let state = {
       notes: [],
+      kladblokHeader: [
+        '# Kladblok',
+        '',
+        '*De buffer: wat je dagelijks noteert. Sleep het op de Weekvorm of een speelbord naar een dag.*',
+        '',
+        '## Kladblok'
+      ],
       afgerond: ['Welkom in je mobiele Werkplaats'],
       dayBoards: { MA: [], DI: [], WO: [], DO: [], VR: [], ZA: [], ZO: [] },
       undoStack: [],
@@ -2228,7 +2235,7 @@
       quillSoundOn: true,
       uiSoundOn: true,
       foldMode: 'auto',
-      ghRepo: '',
+      ghRepo: 'GRwald/ai-werkplaats',
       ghToken: '',
       claudeKey: ''
     };
@@ -2242,8 +2249,25 @@
           if (state.quillSoundOn === undefined) state.quillSoundOn = true;
           if (state.uiSoundOn === undefined) state.uiSoundOn = true;
           if (!state.foldMode) state.foldMode = 'auto';
+          if (!state.ghRepo) state.ghRepo = 'GRwald/ai-werkplaats';
         } else {
           state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
+        }
+
+        // Ondersteun 1-klik QR-koppeling via lokale URL-hash (#token=ghp_...&repo=GRwald/ai-werkplaats)
+        // Hash-parameters verlaten de browser nooit en worden direct gewist uit de adresbalk!
+        if (window.location.hash && window.location.hash.length > 3) {
+          const params = new URLSearchParams(window.location.hash.slice(1));
+          const hToken = params.get('token');
+          const hRepo = params.get('repo');
+          const hClaude = params.get('claude');
+          if (hToken) state.ghToken = hToken.trim();
+          if (hRepo) state.ghRepo = hRepo.trim();
+          if (hClaude) state.claudeKey = hClaude.trim();
+          if (hToken || hRepo || hClaude) {
+            saveLocalState();
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
         }
       } catch (_) {
         state.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
@@ -2583,7 +2607,7 @@
       state.sealMode = false;
       saveLocalState();
 
-      syncToGitHubIfConfigured(`Afgerond: ${note.title}`, `${today} — ${note.title}`);
+      syncToGitHubIfConfigured(`Afgerond: ${note.title}`, note, null);
       showToast('Afgerond en opgeborgen in de kist');
 
       setTimeout(() => {
@@ -2919,7 +2943,7 @@
 
       playFireCrackleSound();
       saveLocalState();
-      syncToGitHubIfConfigured(`Verbrand/verwijderd: ${note.title}`);
+      syncToGitHubIfConfigured(`Naar prullenbak: ${note.title}`, null, note);
       showToast('🔥 Briefje in vlammen opgegaan (tik ↶ Terug als je spijt hebt)');
 
       run16BitBurnAnimation(() => {
@@ -2980,9 +3004,33 @@
       lastCommittedChunk = clean;
     }
 
+    // Callback voor de native Android SpeechRecognizer in werkplaats-mobiel.apk
+    window.onNativeSpeechResult = function(text, isFinal) {
+      pulseLakeRipple(0.4);
+      playQuillScratch();
+      if (isFinal) {
+        appendSpokenChunkCleanly(text);
+        interimEl.textContent = '';
+        inputEl.scrollTop = inputEl.scrollHeight;
+      } else {
+        interimEl.textContent = text ? '… ' + text : '';
+      }
+    };
+
+    window.onNativeSpeechEnd = function() {
+      if (wantListening && window.AndroidWerkplaats && window.AndroidWerkplaats.startListening) {
+        setTimeout(() => {
+          if (wantListening) {
+            try { window.AndroidWerkplaats.startListening(); } catch (_) {}
+          }
+        }, 180);
+      }
+    };
+
     function toggleSpeech() {
+      const hasNative = !!(window.AndroidWerkplaats && window.AndroidWerkplaats.startListening);
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
+      if (!hasNative && !SR) {
         inputEl.focus();
         showToast('Tip: gebruik je toetsenbord-microfoon of Superwhisper');
         return;
@@ -2993,6 +3041,9 @@
 
       if (wantListening) {
         wantListening = false;
+        if (hasNative) {
+          try { window.AndroidWerkplaats.stopListening(); } catch (_) {}
+        }
         if (recognition) {
           try { recognition.stop(); } catch (_) {}
         }
@@ -3008,7 +3059,11 @@
       btn.classList.add('listening');
       lbl.textContent = 'Stop';
       playWoodTouch('wood');
-      startSingleSpeechPass();
+      if (hasNative) {
+        try { window.AndroidWerkplaats.startListening(); } catch (_) {}
+      } else {
+        startSingleSpeechPass();
+      }
     }
 
     function startSingleSpeechPass() {
@@ -3076,6 +3131,7 @@
       if (wantListening) toggleSpeech();
       playWoodTouch('pin');
 
+      const today = new Date().toISOString().slice(0, 10);
       const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
       let title = lines[0].length > 68 ? lines[0].slice(0, 65) + '...' : lines[0];
       let shortTitle = title.length > 32 ? title.slice(0, 30) + '…' : title;
@@ -3092,18 +3148,30 @@
         } catch (_) {}
       }
 
+      // Opbouw volgens Briefje-protocol.md voor +/kladblok.md
+      const isSimple = raw.length < 70 && lines.length === 1;
+      const rawHeadLine = isSimple ? `- [ ] ${title}` : `- [ ] ${title} · jij bent aan zet`;
+      const rawSubLines = isSimple
+        ? []
+        : [
+            `  - Bron: Werkplaats Mobiel · ${today}`,
+            `  - Jouw zet: ${jouwZet}`
+          ];
+
       const newNote = {
         id: 'note-' + Date.now(),
         shortTitle,
         title,
         warm: true,
         dag: '',
-        bron: 'Mobiel',
-        datum: new Date().toISOString().slice(0, 10),
+        bron: 'Werkplaats Mobiel',
+        datum: today,
         gmail: '',
         samenvatting: raw,
-        stappen: [],
-        jouw_zet: jouwZet
+        stappen: rawSubLines.map((s) => s.replace(/^\s*-\s*/, '')),
+        jouw_zet: jouwZet,
+        rawHeadLine,
+        rawSubLines
       };
 
       state.notes.unshift(newNote);
@@ -3115,7 +3183,7 @@
       // Subtiele 16-bit Raaf: vliegt door het raampje én scheert niet-intrusive bovenlangs over het hout van Het Bord!
       playWingFlutter('raven');
       launchMessengerBird('raven');
-      syncToGitHubIfConfigured(`Nieuw briefje: ${title}`);
+      syncToGitHubIfConfigured(`Kladblok (mobiel): ${title}`);
       switchTab(2);
       runBoardRavenDelivery();
     }
@@ -3132,19 +3200,24 @@
       launchMessengerBird('dove');
 
       const today = new Date().toISOString().slice(0, 10);
-      const firstWords = raw.split(/\s+/).slice(0, 5).join(' ').replace(/[^\w\s-]/g, '').trim() || 'Inworp';
-      const slug = firstWords.toLowerCase().replace(/\s+/g, '-');
-      const filePath = `Projects/Survival Gids/Inworpen/${today}-${slug}.md`;
-      const mdContent = `---\ntype: boek-inworp\ndatum: ${today}\nbron: werkplaats-mobiel\ndoor: gerwald\n---\n\n# ${firstWords}\n\n${raw}\n`;
+      const firstWords = raw
+        .split(/\s+/)
+        .slice(0, 5)
+        .join(' ')
+        .replace(/[\\/:*?"<>|#^\[\]]/g, '')
+        .trim() || 'Inworp';
+      // Exact volgens Projects/Survival Gids/Survival Gids.md: nieuwe notitie in Materiaal/, naam JJJJ-MM-DD <paar woorden>
+      const filePath = `Projects/Survival Gids/Materiaal/${today} ${firstWords}.md`;
+      const mdContent = `---\ntype: materiaal\ndatum: ${today}\nbron: werkplaats-mobiel\ndoor: gerwald\n---\n\n# ${firstWords}\n\n${raw}\n`;
 
       inputEl.value = '';
       previousScrollText = '';
       document.getElementById('scroll-undo-btn').classList.remove('visible');
 
       if (state.ghRepo && state.ghToken) {
-        await putGitHubFile(filePath, mdContent, `Boek-inworp: ${firstWords}`);
+        await putGitHubFile(filePath, mdContent, `Survival Gids Materiaal: ${today} ${firstWords}`);
       }
-      showToast(`🕊 Postduif onderweg naar Survival Gids: "${firstWords}"`);
+      showToast(`🕊 Postduif onderweg naar Survival Gids/Materiaal: "${firstWords}"`);
     }
 
     // =========================================================================
@@ -3227,42 +3300,83 @@
     }
 
     // =========================================================================
-    // 10. BACKOFFICE: GITHUB AUTO-DETECTIE & CLAUDE API SYNCHRONISATIE
+    // 10. BACKOFFICE: ECHTE OBSIDIAN VAULT (GRwald/ai-werkplaats) SYNCHRONISATIE
+    //     - +/kladblok.md (incl. Briefje-protocol SBAR-onderregels, [mail], → dag?)
+    //     - +/afgerond.md (- [x] ... %%klaar YYYY-MM-DD%%)
+    //     - +/prullenbak.md (- [ ] ... %%uit kladblok · YYYY-MM-DD%%)
+    //     - Calendar/dagen/<Dag>.canvas (JSON Canvas, width 220, color "2" / "5")
+    //     - Projects/Survival Gids/Materiaal/YYYY-MM-DD <titel>.md
     // =========================================================================
-    function serializeKladblokMarkdown() {
-      const lines = ['# Kladblok', ''];
-      state.notes.forEach((n) => {
-        const meta = {
-          bron: n.bron || 'Werkplaats Mobiel',
-          datum: n.datum || new Date().toISOString().slice(0, 10),
-          gmail: n.gmail || undefined,
-          warm: n.warm,
-          dag: n.dag || undefined,
-          samenvatting: n.samenvatting || n.title,
-          stappen: n.stappen || [],
-          jouw_zet: n.jouw_zet || ''
-        };
-        lines.push(`- ${n.title}`);
-        lines.push(`  <!-- briefje ${JSON.stringify(meta)} -->`);
-      });
-      return lines.join('\n') + '\n';
+    const DAY_CODE_MAP = {
+      ma: 'MA', maandag: 'MA',
+      di: 'DI', dinsdag: 'DI',
+      wo: 'WO', woensdag: 'WO',
+      do: 'DO', donderdag: 'DO',
+      vr: 'VR', vrijdag: 'VR',
+      za: 'ZA', zaterdag: 'ZA',
+      zo: 'ZO', zondag: 'ZO'
+    };
+
+    function formatNoteAsVaultLines(n) {
+      let head = n.rawHeadLine || `- [ ] ${n.title}`;
+      // Bewaar expliciete warm/koel keuze als tag als Gerwald heeft gewisseld
+      head = head.replace(/\s*%%(warm|koel)%%/g, '');
+      if (n.warmToggled) {
+        head += n.warm ? ' %%warm%%' : ' %%koel%%';
+      }
+      const subs = Array.isArray(n.rawSubLines) ? [...n.rawSubLines] : [];
+      return [head, ...subs];
     }
 
-    async function putGitHubFile(path, contentText, commitMsg) {
+    function serializeKladblokMarkdown() {
+      const header = (Array.isArray(state.kladblokHeader) && state.kladblokHeader.length > 0)
+        ? state.kladblokHeader
+        : [
+            '# Kladblok',
+            '',
+            '*De buffer: wat je dagelijks noteert. Sleep het op de Weekvorm of een speelbord naar een dag.*',
+            '',
+            '## Kladblok'
+          ];
+      const out = [...header];
+      state.notes.forEach((n) => {
+        formatNoteAsVaultLines(n).forEach((l) => out.push(l));
+      });
+      return out.join('\n') + '\n';
+    }
+
+    async function getGitHubFileText(path) {
+      if (!state.ghRepo || !state.ghToken) return null;
+      const apiUrl = `https://api.github.com/repos/${state.ghRepo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`;
+      const res = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${state.ghToken}`,
+          Accept: 'application/vnd.github+json'
+        }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+      return { text, sha: data.sha };
+    }
+
+    async function putGitHubFile(path, contentText, commitMsg, knownSha = undefined) {
       if (!state.ghRepo || !state.ghToken) return false;
       const apiUrl = `https://api.github.com/repos/${state.ghRepo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`;
       const headers = {
         Authorization: `Bearer ${state.ghToken}`,
         Accept: 'application/vnd.github+json'
       };
-      let sha = undefined;
-      try {
-        const getRes = await fetch(apiUrl, { headers });
-        if (getRes.ok) {
-          const existing = await getRes.json();
-          sha = existing.sha;
-        }
-      } catch (_) {}
+      let sha = knownSha;
+      if (!sha) {
+        try {
+          const getRes = await fetch(apiUrl, { headers });
+          if (getRes.ok) {
+            const existing = await getRes.json();
+            sha = existing.sha;
+          }
+        } catch (_) {}
+      }
 
       const body = {
         message: commitMsg,
@@ -3278,13 +3392,49 @@
       return putRes.ok;
     }
 
-    async function syncToGitHubIfConfigured(commitMsg, afgerondLine = null) {
+    async function prependUnderHeadingOnGitHub(path, heading, itemLines, commitMsg) {
+      try {
+        const existing = await getGitHubFileText(path);
+        if (!existing) return;
+        const lines = existing.text.split('\n');
+        const hIdx = lines.findIndex((l) => l.trim().startsWith(heading));
+        if (hIdx !== -1) {
+          lines.splice(hIdx + 1, 0, ...itemLines);
+        } else {
+          lines.push('', heading, ...itemLines);
+        }
+        await putGitHubFile(path, lines.join('\n'), commitMsg, existing.sha);
+      } catch (_) {}
+    }
+
+    async function syncToGitHubIfConfigured(commitMsg, completedNote = null, trashedNote = null) {
       if (!state.ghRepo || !state.ghToken) return;
+      const today = new Date().toISOString().slice(0, 10);
       try {
         await putGitHubFile('+/kladblok.md', serializeKladblokMarkdown(), commitMsg);
-        if (afgerondLine) {
-          const afgContent = `# Afgerond\n\n` + state.afgerond.map((l) => `- ${l}`).join('\n') + '\n';
-          await putGitHubFile('+/afgerond.md', afgContent, commitMsg);
+
+        if (completedNote) {
+          // Volgens AGENTS.md: - [x] ... %%klaar <datum>%% bovenaan onder ## Afgerond in +/afgerond.md
+          const rawHead = (completedNote.rawHeadLine || `- [ ] ${completedNote.title}`)
+            .replace(/^- \[[ xX]\]\s*/, '')
+            .replace(/\s*%%(warm|koel)%%/g, '');
+          const doneLines = [
+            `- [x] ${rawHead} %%klaar ${today}%%`,
+            ...(completedNote.rawSubLines || [])
+          ];
+          await prependUnderHeadingOnGitHub('+/afgerond.md', '## Afgerond', doneLines, commitMsg);
+        }
+
+        if (trashedNote) {
+          // Volgens AGENTS.md: - [ ] ... %%uit kladblok · <datum>%% bovenaan onder ## Prullenbak in +/prullenbak.md
+          const rawHead = (trashedNote.rawHeadLine || `- [ ] ${trashedNote.title}`)
+            .replace(/^- \[[ xX]\]\s*/, '')
+            .replace(/\s*%%(warm|koel)%%/g, '');
+          const trashLines = [
+            `- [ ] ${rawHead} %%uit kladblok · ${today}%%`,
+            ...(trashedNote.rawSubLines || [])
+          ];
+          await prependUnderHeadingOnGitHub('+/prullenbak.md', '## Prullenbak', trashLines, commitMsg);
         }
       } catch (_) {}
     }
@@ -3292,41 +3442,40 @@
     async function syncDayCanvasToGitHub(dayCode, note) {
       if (!state.ghRepo || !state.ghToken) return;
       const path = `Calendar/dagen/${DAY_FILE_NAMES[dayCode]}.canvas`;
-      const apiUrl = `https://api.github.com/repos/${state.ghRepo}/contents/${path}`;
-      const headers = {
-        Authorization: `Bearer ${state.ghToken}`,
-        Accept: 'application/vnd.github+json'
-      };
       try {
         let canvasObj = { nodes: [], edges: [] };
-        const res = await fetch(apiUrl, { headers });
-        if (res.ok) {
-          const fileData = await res.json();
-          const decoded = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
-          canvasObj = JSON.parse(decoded);
+        let sha = undefined;
+        const existing = await getGitHubFileText(path);
+        if (existing) {
+          sha = existing.sha;
+          canvasObj = JSON.parse(existing.text);
         }
-        const maxY = (canvasObj.nodes || []).reduce((m, n) => Math.max(m, (n.y || 0) + (n.height || 80)), 0);
-        canvasObj.nodes = canvasObj.nodes || [];
-        canvasObj.nodes.push({
-          id: 'mob-' + Date.now().toString(16),
+        const nodes = canvasObj.nodes || [];
+        const maxY = nodes.reduce((m, n) => Math.max(m, (n.y || 0) + (n.height || 80)), 0);
+        const nodeText = (note.rawHeadLine || note.title).replace(/^- \[[ xX]\]\s*/, '');
+        nodes.push({
+          id: Math.random().toString(16).slice(2, 18),
           type: 'text',
-          text: `**${note.title}**\n${note.jouw_zet || ''}`.trim(),
+          text: nodeText,
           x: 60,
-          y: maxY + 40,
-          width: 240,
-          height: 90,
+          y: nodes.length > 0 ? maxY + 40 : 40,
+          width: 220, // Exact volgens AGENTS.md: width 220, color "2" actie / "5" vraag
+          height: Math.max(74, Math.min(140, Math.ceil(nodeText.length / 28) * 22 + 30)),
           color: note.warm ? '2' : '5'
         });
-        await putGitHubFile(path, JSON.stringify(canvasObj, null, 2), `Mobiel -> ${DAY_FILE_NAMES[dayCode]}: ${note.title}`);
+        canvasObj.nodes = nodes;
+        await putGitHubFile(path, JSON.stringify(canvasObj, null, '\t'), `Kladblok -> ${DAY_FILE_NAMES[dayCode]}: ${note.title}`, sha);
       } catch (_) {}
     }
 
-    /**
-     * Als Gerwald alleen zijn GitHub token invult, zoekt deze functie automatisch
-     * tussen zijn eigen GitHub repositories welke kluis het bestand '+/kladblok.md' bevat!
-     */
     async function autoDetectVaultRepo(token) {
       const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' };
+      // Check eerst direct GRwald/ai-werkplaats
+      try {
+        const direct = await fetch('https://api.github.com/repos/GRwald/ai-werkplaats/contents/+%2Fkladblok.md', { headers });
+        if (direct.ok) return 'GRwald/ai-werkplaats';
+      } catch (_) {}
+
       const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', { headers });
       if (!res.ok) return null;
       const repos = await res.json();
@@ -3338,77 +3487,233 @@
       return null;
     }
 
-    async function pullFromGitHub() {
-      state.ghRepo = document.getElementById('cfg-gh-repo').value.trim();
-      state.ghToken = document.getElementById('cfg-gh-token').value.trim();
-      state.claudeKey = document.getElementById('cfg-claude-key').value.trim();
+    async function pullFromGitHub(silent = false) {
+      const repoInput = document.getElementById('cfg-gh-repo');
+      const tokenInput = document.getElementById('cfg-gh-token');
+      const claudeInput = document.getElementById('cfg-claude-key');
+      if (repoInput && repoInput.value.trim()) state.ghRepo = repoInput.value.trim();
+      if (tokenInput && tokenInput.value.trim()) state.ghToken = tokenInput.value.trim();
+      if (claudeInput && claudeInput.value.trim()) state.claudeKey = claudeInput.value.trim();
 
       if (!state.ghToken) {
-        showToast('Plak eerst je GitHub Token');
+        if (!silent) showToast('Plak eerst je GitHub Token');
         return;
       }
 
       if (!state.ghRepo) {
-        showToast('Zoekt automatisch naar je Obsidian-kluis op GitHub...');
+        if (!silent) showToast('Zoekt automatisch naar je Obsidian-kluis op GitHub...');
         const detected = await autoDetectVaultRepo(state.ghToken);
         if (detected) {
           state.ghRepo = detected;
-          document.getElementById('cfg-gh-repo').value = detected;
+          if (repoInput) repoInput.value = detected;
         } else {
-          showToast('Vul ook de naam van je kluis-repo in');
-          return;
+          state.ghRepo = 'GRwald/ai-werkplaats';
         }
       }
 
       saveLocalState();
       try {
-        const res = await fetch(`https://api.github.com/repos/${state.ghRepo}/contents/+%2Fkladblok.md`, {
-          headers: { Authorization: `Bearer ${state.ghToken}`, Accept: 'application/vnd.github+json' }
-        });
-        if (!res.ok) throw new Error('Niet gevonden');
-        const data = await res.json();
-        const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
-        parseKladblokMarkdown(text);
+        // 1. Haal +/kladblok.md op
+        const kb = await getGitHubFileText('+/kladblok.md');
+        if (!kb) throw new Error('Niet gevonden');
+        parseKladblokMarkdown(kb.text);
+
+        // 2. Haal +/afgerond.md op (voor de Kist)
+        getGitHubFileText('+/afgerond.md').then((afg) => {
+          if (!afg) return;
+          const doneItems = afg.text
+            .split('\n')
+            .filter((l) => l.trim().startsWith('- [x]'))
+            .map((l) => {
+              const dateMatch = l.match(/%%klaar\s+(\d{4}-\d{2}-\d{2})%%/);
+              const clean = l
+                .replace(/^- \[[xX]\]\s*/, '')
+                .replace(/%%.*?%%/g, '')
+                .replace(/·\s*\[mail\]\([^)]+\)/g, '')
+                .trim();
+              return dateMatch ? `${dateMatch[1]} — ${clean}` : clean;
+            });
+          if (doneItems.length > 0) {
+            state.afgerond = doneItems.slice(0, 30);
+            saveLocalState();
+          }
+        }).catch(() => {});
+
+        // 3. Haal de 7 dag-speelborden (Calendar/dagen/<Dag>.canvas) op zodat DI/WO/DO/VR ook hun bestaande kaarten tonen!
+        Promise.all(
+          DAYS.map(async (dCode) => {
+            const cFile = await getGitHubFileText(`Calendar/dagen/${DAY_FILE_NAMES[dCode]}.canvas`);
+            if (!cFile) return;
+            try {
+              const cObj = JSON.parse(cFile.text);
+              const items = (cObj.nodes || [])
+                .filter((n) => n.type === 'text' && n.text && n.text.trim().length > 3 && n.color !== '6')
+                .map((n) => {
+                  const cleanTxt = n.text
+                    .replace(/·\s*\[mail\]\([^)]+\)/g, '')
+                    .replace(/https?:\/\/\S+/g, '')
+                    .trim();
+                  return {
+                    id: 'canvas-' + n.id,
+                    shortTitle: cleanTxt.slice(0, 30),
+                    title: cleanTxt,
+                    warm: n.color === '2',
+                    dag: dCode,
+                    jouw_zet: cleanTxt
+                  };
+                });
+              state.dayBoards[dCode] = items;
+            } catch (_) {}
+          })
+        ).then(() => {
+          saveLocalState();
+          renderBoard();
+        }).catch(() => {});
+
         saveLocalState();
         renderBoard();
         closeSettingsModal();
-        playBellChime();
-        showToast(`Kladblok geladen uit ${state.ghRepo}`);
+        if (!silent) {
+          playWoodTouch('paper');
+          showToast(`✓ Kluis gesynchroniseerd (${state.notes.length} briefjes op je bord)`);
+        }
       } catch (e) {
-        showToast('Kon +/kladblok.md niet vinden: controleer repo en token');
+        if (!silent) showToast('Kon +/kladblok.md niet openen: controleer je GitHub Token');
       }
     }
 
+    /**
+     * Parset het echte C:\Obsidian\Ai-Werkplaats\+\kladblok.md formaat
+     * (inclusief Briefje-protocol SBAR-onderregels, [mail]-links en → dag? suggesties).
+     */
     function parseKladblokMarkdown(md) {
-      const lines = md.split('\n');
+      const lines = md.replace(/\r\n/g, '\n').split('\n');
+      const header = [];
       const parsed = [];
+      let inList = false;
+
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line.startsWith('- ')) {
-          const title = line.slice(2).trim();
-          let meta = {};
-          if (i + 1 < lines.length && lines[i + 1].includes('<!-- briefje')) {
-            const m = lines[i + 1].match(/<!--\s*briefje\s+(\{.*\})\s*-->/);
-            if (m) {
-              try { meta = JSON.parse(m[1]); } catch (_) {}
-            }
-            i++;
+        const rawLine = lines[i];
+        const trimmed = rawLine.trim();
+
+        if (!inList) {
+          if (trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]')) {
+            inList = true;
+          } else {
+            header.push(rawLine);
+            continue;
           }
+        }
+
+        if (trimmed.startsWith('- [ ]') || (trimmed.startsWith('- ') && !rawLine.startsWith('  '))) {
+          const rawHeadLine = rawLine;
+          const rawSubLines = [];
+          while (i + 1 < lines.length && (lines[i + 1].startsWith('  ') || lines[i + 1].startsWith('\t'))) {
+            i++;
+            if (lines[i].trim()) rawSubLines.push(lines[i]);
+          }
+
+          const fullBlock = [rawHeadLine, ...rawSubLines].join('\n');
+
+          // 1. Haal Gmail-link uit [mail](https://mail.google.com/...) of losse URL
+          let gmail = '';
+          const mdMail = fullBlock.match(/\[mail\]\((https:\/\/mail\.google\.com\/[^)]+)\)/i);
+          const bareMail = fullBlock.match(/(https:\/\/mail\.google\.com\/\S+)/i);
+          if (mdMail) gmail = mdMail[1];
+          else if (bareMail) gmail = bareMail[1].replace(/[)>.,;]+$/, '');
+
+          // 2. Haal dag-suggestie (→ ma?, → di?, → wo?, etc.) op
+          let dag = '';
+          const dayMatch = fullBlock.match(/→\s*(ma|di|wo|do|vr|za|zo|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\??/i);
+          if (dayMatch) {
+            dag = DAY_CODE_MAP[dayMatch[1].toLowerCase()] || '';
+          }
+
+          // 3. Haal SBAR-onderregels (Bron, Was, Doel, Nu, Open, Knoop, Jouw zet) uit rawSubLines
+          let bron = 'Kladblok';
+          let datum = '';
+          let jouwZet = '';
+          const stappen = [];
+
+          rawSubLines.forEach((sub) => {
+            const s = sub.trim().replace(/^-\s*/, '');
+            if (/^Bron:/i.test(s)) {
+              const bParts = s.replace(/^Bron:\s*/i, '').split('·').map((p) => p.trim());
+              bron = bParts[0] || 'Mail';
+              if (bParts[1]) datum = bParts[1];
+            } else if (/^Jouw zet:/i.test(s)) {
+              jouwZet = s.replace(/^Jouw zet:\s*/i, '').trim();
+            } else if (!s.startsWith('→')) {
+              stappen.push(s);
+            }
+          });
+
+          // 4. Maak een schone, leesbare titel voor op het briefje
+          let cleanHead = rawHeadLine
+            .replace(/^\s*-\s*\[[ xX]\]\s*/, '')
+            .replace(/^\s*-\s*/, '')
+            .replace(/\s*%%.*?%%/g, '')
+            .replace(/\s*\[mail\]\([^)]+\)/gi, '')
+            .replace(/\s*https?:\/\/\S+/gi, '')
+            .replace(/\s*\[\[([^\]|]+)\|([^\]]+)\]\]/g, ' ($2)')
+            .replace(/\s*\[\[([^\]]+)\]\]/g, ' ($1)')
+            .trim();
+
+          // Splits op '→ dag? · Afzender' als die achteraan de kopregel staat
+          const arrowSplit = cleanHead.split(/\s*→\s*(?:ma|di|wo|do|vr|za|zo)\??\s*(?:·\s*)?/i);
+          let mainTitle = (arrowSplit[0] || cleanHead).replace(/\s*·\s*$/, '').trim();
+          if (arrowSplit[1] && bron === 'Kladblok') {
+            bron = arrowSplit[1].replace(/·/g, '').trim();
+          }
+
+          // Als '· jij bent aan zet' achteraan staat, haal het uit de korte kaarttitel
+          const zetSplit = mainTitle.split(/\s*·\s*jij bent aan zet/i);
+          mainTitle = (zetSplit[0] || mainTitle).trim();
+
+          if (!jouwZet) {
+            jouwZet = mainTitle;
+          }
+
+          // 5. Bepaal Zeker belangrijk (warm) vs Lekker belangrijk (koel)
+          let warm;
+          let warmToggled = false;
+          if (rawHeadLine.includes('%%koel%%')) {
+            warm = false;
+            warmToggled = true;
+          } else if (rawHeadLine.includes('%%warm%%')) {
+            warm = true;
+            warmToggled = true;
+          } else {
+            warm = Boolean(
+              rawSubLines.length > 0 ||
+              gmail ||
+              dag ||
+              /jij bent aan zet|factuur|belasting|cursus|datum|opname/i.test(fullBlock)
+            );
+          }
+
+          const shortTitle = mainTitle.length > 34 ? mainTitle.slice(0, 32) + '…' : mainTitle;
+
           parsed.push({
             id: 'kb-' + i + '-' + Date.now(),
-            shortTitle: title.length > 32 ? title.slice(0, 30) + '…' : title,
-            title,
-            warm: meta.warm !== undefined ? Boolean(meta.warm) : true,
-            dag: meta.dag || '',
-            bron: meta.bron || 'Kladblok',
-            datum: meta.datum || '',
-            gmail: meta.gmail || '',
-            samenvatting: meta.samenvatting || title,
-            stappen: meta.stappen || [],
-            jouw_zet: meta.jouw_zet || ''
+            shortTitle,
+            title: mainTitle,
+            warm,
+            warmToggled,
+            dag,
+            bron,
+            datum,
+            gmail,
+            samenvatting: cleanHead,
+            stappen,
+            jouw_zet: jouwZet,
+            rawHeadLine,
+            rawSubLines
           });
         }
       }
+
+      if (header.length > 0) state.kladblokHeader = header;
       if (parsed.length > 0) state.notes = parsed;
     }
 
@@ -3424,7 +3729,7 @@
         body: JSON.stringify({
           model: 'claude-3-5-haiku-latest',
           max_tokens: 220,
-          system: 'Je bent Gerwalds korte briefjes-assistent. Vat een ingesproken notitie samen als JSON met exact twee velden: {"title": "korte titel max 7 woorden", "jouw_zet": "één concrete volgende actie in 1 zin"}. Alleen JSON teruggeven.',
+          system: 'Je bent Gerwalds korte briefjes-assistent volgens het Briefje-protocol. Vat een ingesproken notitie samen als JSON met exact twee velden: {"title": "korte kwestie max 7 woorden", "jouw_zet": "één concrete eerstvolgende actie in 1 korte zin"}. Alleen JSON teruggeven.',
           messages: [{ role: 'user', content: rawText }]
         })
       });
@@ -3437,7 +3742,7 @@
 
     function openSettingsModal() {
       playWoodTouch('wood');
-      document.getElementById('cfg-gh-repo').value = state.ghRepo || '';
+      document.getElementById('cfg-gh-repo').value = state.ghRepo || 'GRwald/ai-werkplaats';
       document.getElementById('cfg-gh-token').value = state.ghToken || '';
       document.getElementById('cfg-claude-key').value = state.claudeKey || '';
       updateSettingsButtons();
@@ -3449,12 +3754,12 @@
     }
 
     function saveSettings() {
-      state.ghRepo = document.getElementById('cfg-gh-repo').value.trim();
+      state.ghRepo = document.getElementById('cfg-gh-repo').value.trim() || 'GRwald/ai-werkplaats';
       state.ghToken = document.getElementById('cfg-gh-token').value.trim();
       state.claudeKey = document.getElementById('cfg-claude-key').value.trim();
       saveLocalState();
       closeSettingsModal();
-      playBellChime();
+      playWoodTouch('paper');
       showToast('Bewaard');
     }
 
@@ -3482,6 +3787,11 @@
     renderBoard();
     fetchAlkmaarWeather();
     setInterval(drawLakeFrame, 55);
+
+    // Als Gerwald zijn GitHub Token al heeft gekoppeld, haal bij het openen van de app automatisch de verse stand uit de vault!
+    if (state.ghToken) {
+      pullFromGitHub(true);
+    }
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
