@@ -2,49 +2,54 @@ param(
     [string]$GitHubToken = "",
     [string]$GitHubRepo  = "GRwald/ai-werkplaats",
     [string]$ClaudeKey   = "",
-    [switch]$AlleenBraveVerversen
+    [switch]$PushApk
 )
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
+
 $Adb      = 'D:\Anitgravity-Lab\bouwblokken\android-sdk\platform-tools\adb.exe'
 $ApkPath  = 'D:\Anitgravity-Lab\producten\werkplaats-mobiel.apk'
 $BuildPs1 = 'D:\Anitgravity-Lab\projecten\werkplaats-mobiel\build-apk.ps1'
 
 Write-Host "=== 1. Controleer verbonden Honor Magic V3 via ADB ==="
 $devicesOutput = & $Adb devices -l
+if ($devicesOutput -match 'AXGL024C11002371\s+offline') {
+    Write-Host "Herstel vertrouwde ADB-sleutel en herverbind..."
+    & $Adb kill-server
+    Start-Sleep -Seconds 1
+    & $Adb start-server
+    Start-Sleep -Seconds 2
+    $devicesOutput = & $Adb devices -l
+}
 Write-Host ($devicesOutput | Out-String)
 
-if (-not ($devicesOutput -match '\sdevice\s')) {
-    Write-Warning "Geen telefoon gevonden via ADB. Sluit je Honor Magic V3 aan met USB-foutopsporing (of Draadloze foutopsporing) aan."
-    exit 1
+$ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$url = "https://grwald.github.io/werkplaats-mobiel/?v=$ts"
+
+if (-not $GitHubToken) {
+    try {
+        $credInput = "protocol=https`nhost=github.com`n`n"
+        $credOut = $credInput | git credential fill 2>$null
+        foreach ($line in $credOut) {
+            if ($line -match '^password=(.+)$') {
+                $GitHubToken = $Matches[1].Trim()
+            }
+        }
+    } catch {}
 }
 
-if ($AlleenBraveVerversen) {
-    Write-Host "=== 2. Open/ververs Werkplaats Mobiel in Brave op je telefoon ==="
-    $url = "https://grwald.github.io/werkplaats-mobiel/?v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-    if ($GitHubToken) {
-        $url += "#token=$GitHubToken&repo=$GitHubRepo"
-        if ($ClaudeKey) { $url += "&claude=$ClaudeKey" }
-    }
-    & $Adb shell am start -a android.intent.action.VIEW -d "$url" com.brave.browser
-    Write-Host "=== KLAAR! Brave op je telefoon is ververst. ==="
-    exit 0
-}
-
-Write-Host "=== 2. Bak nieuwste werkplaats-mobiel.apk ==="
-& powershell -ExecutionPolicy Bypass -File $BuildPs1
-
-Write-Host "=== 3. Installeer / update werkplaats-mobiel.apk op je Honor Magic V3 ==="
-& $Adb install -r $ApkPath
-
-Write-Host "=== 4. Start en ververs Werkplaats Mobiel op je scherm ==="
-$argsList = @('shell', 'am', 'start', '-n', 'nl.gerwald.werkplaatsmobiel/.MainActivity', '--ez', 'refresh', 'true')
 if ($GitHubToken) {
-    $argsList += @('--es', 'token', $GitHubToken, '--es', 'repo', $GitHubRepo)
+    Write-Host "=== GitHub-sleutel gevonden op pc -> wordt veilig via USB meegekoppeld naar je telefoon ==="
+    $url += "#token=$GitHubToken&repo=$GitHubRepo"
+    if ($ClaudeKey) { $url += "&claude=$ClaudeKey" }
 }
-if ($ClaudeKey) {
-    $argsList += @('--es', 'claude', $ClaudeKey)
-}
-& $Adb @argsList
 
-Write-Host "=== KLAAR! Werkplaats Mobiel draait vers op je Honor Magic V3! ==="
+Write-Host "=== 2. Ververs Werkplaats Mobiel in Brave op je Honor Magic V3 ==="
+& $Adb -d shell "am start -a android.intent.action.VIEW -d '$url' com.brave.browser" | Out-Null
+
+if ($PushApk) {
+    Write-Host "=== 3. Zet werkplaats-mobiel.apk klaar in je Downloads-map op de telefoon ==="
+    & $Adb -d push $ApkPath /sdcard/Download/werkplaats-mobiel.apk
+}
+
+Write-Host "=== KLAAR! Werkplaats Mobiel is ververst op je Honor Magic V3! ==="

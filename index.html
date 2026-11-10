@@ -1182,6 +1182,10 @@
             <span>Hout-, vuur- & papiergeluidjes</span>
             <button id="toggle-ui-sound-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleUiSound()">Aan</button>
           </div>
+          <div class="toggle-row">
+            <span>Automatisch syncen met GitHub</span>
+            <button id="toggle-autosync-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="toggleAutoSync()">Aan</button>
+          </div>
           <div class="toggle-row" style="border-bottom:none;">
             <span>Honor Fold Tweeluik</span>
             <button id="toggle-fold-btn" class="wood-token token-beige" style="padding:4px 10px;font-size:11px;font-weight:700;" onclick="cycleFoldMode()">Auto</button>
@@ -1317,6 +1321,11 @@
 
       // 2. Haal direct het actuele Kladblok & de Dagborden op uit GRwald/ai-werkplaats
       if (state.ghToken) {
+        if (state.dirtySync) {
+          await syncToGitHubIfConfigured('Werkplaats Mobiel: handmatige sync (↻)', null, null, true);
+          state.dirtySync = false;
+          saveLocalState();
+        }
         await pullFromGitHub(false);
       } else {
         openSettingsModal();
@@ -2350,6 +2359,14 @@
       if (state.uiSoundOn) playWoodTouch('wood');
     }
 
+    function toggleAutoSync() {
+      state.autoSyncOn = state.autoSyncOn === false ? true : false;
+      saveLocalState();
+      updateSettingsButtons();
+      playWoodTouch('wood');
+      showToast(state.autoSyncOn ? 'Auto-sync AAN (direct via internet)' : 'Auto-sync UIT (alleen als je op ↻ tikt)');
+    }
+
     function cycleFoldMode() {
       const modes = ['auto', 'diptych', 'single'];
       const next = modes[(modes.indexOf(state.foldMode || 'auto') + 1) % modes.length];
@@ -2364,6 +2381,7 @@
     function updateSettingsButtons() {
       const qBtn = document.getElementById('toggle-quill-btn');
       const uBtn = document.getElementById('toggle-ui-sound-btn');
+      const sBtn = document.getElementById('toggle-autosync-btn');
       const fBtn = document.getElementById('toggle-fold-btn');
       if (qBtn) {
         qBtn.textContent = state.quillSoundOn ? 'Aan' : 'Uit';
@@ -2372,6 +2390,11 @@
       if (uBtn) {
         uBtn.textContent = state.uiSoundOn ? 'Aan' : 'Uit';
         uBtn.className = `wood-token ${state.uiSoundOn ? 'token-beige' : 'token-cool'}`;
+      }
+      if (sBtn) {
+        const isAuto = state.autoSyncOn !== false;
+        sBtn.textContent = isAuto ? 'Aan' : 'Alleen ↻';
+        sBtn.className = `wood-token ${isAuto ? 'token-beige' : 'token-cool'}`;
       }
       if (fBtn) {
         const labels = { auto: 'Auto (Fold)', diptych: 'Altijd Tweeluik', single: '1 Scherm' };
@@ -3456,8 +3479,13 @@
       } catch (_) {}
     }
 
-    async function syncToGitHubIfConfigured(commitMsg, completedNote = null, trashedNote = null) {
+    async function syncToGitHubIfConfigured(commitMsg, completedNote = null, trashedNote = null, forceManual = false) {
       if (!state.ghRepo || !state.ghToken) return;
+      if (state.autoSyncOn === false && !forceManual) {
+        state.dirtySync = true;
+        saveLocalState();
+        return;
+      }
       const today = new Date().toISOString().slice(0, 10);
       try {
         await putGitHubFile('+/kladblok.md', serializeKladblokMarkdown(), commitMsg);
@@ -3837,8 +3865,8 @@
     fetchAlkmaarWeather();
     setInterval(drawLakeFrame, 55);
 
-    // Als Gerwald zijn GitHub Token al heeft gekoppeld, haal bij het openen van de app automatisch de verse stand uit de vault!
-    if (state.ghToken) {
+    // Als Gerwald zijn GitHub Token al heeft gekoppeld (en autoSync aanstaat), haal bij het openen van de app automatisch de verse stand uit de vault!
+    if (state.ghToken && state.autoSyncOn !== false) {
       pullFromGitHub(true);
     }
 
